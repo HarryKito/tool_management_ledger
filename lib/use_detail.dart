@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:inventory_flutter/database_helper.dart';
-import 'package:inventory_flutter/models.dart';
+import 'package:inventory/DB/database_helper.dart';
+import 'package:inventory/DB/models.dart';
 
 class UseDetailScreen extends StatefulWidget {
   final int toolId;
@@ -52,7 +52,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             end: DateTime.now().add(Duration(days: 1)),
           ),
       firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      lastDate: DateTime(2100),
     );
     if (picked != null && picked != selectedDateRange) {
       setState(() {
@@ -161,7 +161,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   child: TextField(
                     controller: amountController,
                     decoration: InputDecoration(
-                      labelText: '사용량',
+                      labelText: '수량',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
