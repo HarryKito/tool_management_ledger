@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:onetop_tool_management/DB/database_helper.dart';
 import 'package:onetop_tool_management/DB/models.dart';
 import 'package:onetop_tool_management/use_detail.dart';
+import 'package:onetop_tool_management/design/colors.dart';
 
 class ToolsScreen extends StatefulWidget {
   @override
@@ -41,6 +42,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
       await dbHelper.insertTool(tool);
       nameController.clear();
       quantityController.clear();
+      _refreshToolsList();
     }
   }
 
@@ -71,6 +73,60 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   void _deleteTool(int id) async {
     await dbHelper.deleteTool(id);
+    _refreshToolsList();
+  }
+
+  void _editTool(Tools tool) {
+    nameController.text = tool.name;
+    quantityController.text = tool.quantity.toString();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('도구 수정'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: '품명'),
+              ),
+              TextField(
+                controller: quantityController,
+                decoration: InputDecoration(labelText: '수량'),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty &&
+                    quantityController.text.isNotEmpty) {
+                  tool.name = nameController.text;
+                  tool.quantity = int.parse(quantityController.text);
+                  dbHelper.updateTool(tool);
+                  _refreshToolsList();
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text('저장'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Color _getBackgroundColor(Tools tool) {
+    double percentage = (tool.remainingQuantity / tool.quantity) * 100;
+    return ListColor.getColorForPercentage(percentage);
   }
 
   @override
@@ -93,13 +149,23 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   itemBuilder: (context, index) {
                     Tools tool = toolsList[index];
                     return ListTile(
+                      tileColor: _getBackgroundColor(tool), // 배경색 설정
                       title: Text(
                         '${tool.name} (수량: ${tool.quantity}, 잔량: ${tool.remainingQuantity})',
                       ),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () =>
-                            _confirmDeleteTool(tool.id!, tool.name),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: () => _editTool(tool),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () =>
+                                _confirmDeleteTool(tool.id!, tool.name),
+                          ),
+                        ],
                       ),
                       onTap: () {
                         Navigator.push(

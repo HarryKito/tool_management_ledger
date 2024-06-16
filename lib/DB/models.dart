@@ -35,6 +35,17 @@ class Tools {
       remainingQuantity: 0,
     );
   }
+
+  // 잔량
+  String getStockStatus() {
+    if (remainingQuantity == 0) {
+      return 'empty';
+    } else if (remainingQuantity < quantity * 0.2) {
+      return 'low';
+    } else {
+      return 'normal';
+    }
+  }
 }
 
 //

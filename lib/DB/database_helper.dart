@@ -44,6 +44,17 @@ class DatabaseHelper {
     _toolStreamController.add(null); // Emit an event when a tool is added
   }
 
+  Future<void> updateTool(Tools tool) async {
+    final db = await database;
+    await db.update(
+      'tools',
+      tool.toMap(),
+      where: 'id = ?',
+      whereArgs: [tool.id],
+    );
+    _toolStreamController.add(null); // Emit an event when a tool is updated
+  }
+
   Future<List<Tools>> getTools() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('tools');
@@ -66,6 +77,12 @@ class DatabaseHelper {
     _toolStreamController.add(null); // Emit an event when a use is added
   }
 
+  Future<void> deleteUse(int id) async {
+    final db = await database;
+    await db.delete('uses', where: 'id = ?', whereArgs: [id]);
+    _toolStreamController.add(null); // Emit an event when a use is deleted
+  }
+
   Future<List<Uses>> getUsesByToolId(int toolId) async {
     final db = await database;
     final List<Map<String, dynamic>> maps =
@@ -74,12 +91,6 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) {
       return Uses.fromMap(maps[i]);
     });
-  }
-
-  Future<void> deleteUse(int id) async {
-    final db = await database;
-    await db.delete('uses', where: 'id = ?', whereArgs: [id]);
-    _toolStreamController.add(null); // Emit an event when a use is deleted
   }
 
   Future<Tools?> getToolById(int toolId) async {
@@ -96,13 +107,8 @@ class DatabaseHelper {
 
   Future<int> getTotalUsageByToolId(int toolId) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery(
+    final result = await db.rawQuery(
         'SELECT SUM(amount) as total FROM uses WHERE toolId = ?', [toolId]);
-
-    if (maps.isNotEmpty && maps.first['total'] != null) {
-      return maps.first['total'] as int;
-    } else {
-      return 0;
-    }
+    return result.first['total'] != null ? result.first['total'] as int : 0;
   }
 }
