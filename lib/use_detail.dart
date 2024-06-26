@@ -52,7 +52,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             end: DateTime.now().add(Duration(days: 1)),
           ),
       firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      lastDate: DateTime(2200),
     );
     if (picked != null && picked != selectedDateRange) {
       setState(() {
@@ -136,26 +136,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             SizedBox(height: 20),
             Row(
               children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _selectDateRange(context),
-                    child: AbsorbPointer(
-                      child: TextField(
-                        controller: TextEditingController(
-                          text: selectedDateRange != null
-                              ? "${selectedDateRange!.start.toLocal().toString().split(' ')[0]} ~ ${selectedDateRange!.end.toLocal().toString().split(' ')[0]}"
-                              : '',
-                        ),
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: '사용 기간',
-                          border: InputBorder.none,
-                          suffixIcon: Icon(Icons.calendar_today),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
                 SizedBox(width: 10),
                 Expanded(
                   child: TextField(
@@ -173,6 +153,26 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     controller: siteNameController,
                     decoration: InputDecoration(
                       labelText: '현장명',
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _selectDateRange(context),
+                    child: AbsorbPointer(
+                      child: TextField(
+                        controller: TextEditingController(
+                          text: selectedDateRange != null
+                              ? "${selectedDateRange!.start.toLocal().toString().split(' ')[0]} ~ ${selectedDateRange!.end.toLocal().toString().split(' ')[0]}"
+                              : '',
+                        ),
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: '사용 기간',
+                          border: InputBorder.none,
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -196,7 +196,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   Uses use = toolUses[index];
                   return ListTile(
                     title: Text(
-                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]} - ${use.endDate.toLocal().toString().split(' ')[0]}'),
+                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]} ~ ${use.endDate.toLocal().toString().split(' ')[0]}'),
                     subtitle: Text('사용량: ${use.amount}\n현장명: ${use.siteName}'),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),

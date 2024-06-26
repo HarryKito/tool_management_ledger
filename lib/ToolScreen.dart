@@ -84,7 +84,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('도구 수정'),
+          title: Text('수정'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
