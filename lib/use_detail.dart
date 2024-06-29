@@ -16,6 +16,8 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController siteNameController = TextEditingController();
   final DatabaseHelper dbHelper = DatabaseHelper();
+  DateTime? selectedDateStart;
+  DateTime? selectedDateEnd;
   DateTimeRange? selectedDateRange;
   List<Uses> toolUses = [];
   String toolName = '';
@@ -41,6 +43,36 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     setState(() {
       toolUses = uses;
     });
+  }
+
+// Start date
+// 불출일
+  Future<void> _selectStartDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDateStart ?? DateTime.now(),
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2200));
+    if (picked != null && picked != selectedDateStart) {
+      setState(() {
+        selectedDateStart = picked;
+      });
+    }
+  }
+
+// Start date
+// 입고일
+  Future<void> _selectEndDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDateEnd ?? DateTime.now(),
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2200));
+    if (picked != null && picked != selectedDateEnd) {
+      setState(() {
+        selectedDateEnd = picked;
+      });
+    }
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
@@ -197,7 +229,37 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   return ListTile(
                     title: Text(
                         '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]} ~ ${use.endDate.toLocal().toString().split(' ')[0]}'),
-                    subtitle: Text('사용량: ${use.amount}\n현장명: ${use.siteName}'),
+                    subtitle: Row(
+                      children: [
+                        Column(
+                          children: [
+                            Text('사용량: ${use.amount}\n현장명: ${use.siteName}'),
+                          ],
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: () => _selectEndDate(context),
+                              child: AbsorbPointer(
+                                child: TextField(
+                                  controller: TextEditingController(
+                                    text: selectedDateRange != null // 삼항연산
+                                        ? "${selectedDateRange!.end.toLocal().toString().split(' ')[0]} 까지"
+                                        : '',
+                                  ),
+                                  readOnly: true,
+                                  decoration: InputDecoration(
+                                    labelText: '사용 종료일',
+                                    border: InputBorder.none,
+                                    suffixIcon: Icon(Icons.calendar_today),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),
                       onPressed: () =>
