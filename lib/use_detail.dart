@@ -16,8 +16,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController siteNameController = TextEditingController();
   final DatabaseHelper dbHelper = DatabaseHelper();
-  DateTime? selectedDateStart;
-  DateTime? selectedDateEnd;
   DateTimeRange? selectedDateRange;
   List<Uses> toolUses = [];
   String toolName = '';
@@ -45,36 +43,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     });
   }
 
-// Start date
-// 불출일
-  Future<void> _selectStartDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-        context: context,
-        initialDate: selectedDateStart ?? DateTime.now(),
-        firstDate: DateTime(2000),
-        lastDate: DateTime(2200));
-    if (picked != null && picked != selectedDateStart) {
-      setState(() {
-        selectedDateStart = picked;
-      });
-    }
-  }
-
-// Start date
-// 입고일
-  Future<void> _selectEndDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-        context: context,
-        initialDate: selectedDateEnd ?? DateTime.now(),
-        firstDate: DateTime(2000),
-        lastDate: DateTime(2200));
-    if (picked != null && picked != selectedDateEnd) {
-      setState(() {
-        selectedDateEnd = picked;
-      });
-    }
-  }
-
   Future<void> _selectDateRange(BuildContext context) async {
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
@@ -84,7 +52,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             end: DateTime.now().add(Duration(days: 1)),
           ),
       firstDate: DateTime(2000),
-      lastDate: DateTime(2200),
+      lastDate: DateTime(2100),
     );
     if (picked != null && picked != selectedDateRange) {
       setState(() {
@@ -106,7 +74,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
         siteName: siteName,
       );
       await dbHelper.insertUse(use);
-      _fetchToolUses();
+      _fetchToolUses(); // 사용 내역 추가 후 목록 다시 불러오기
       amountController.clear();
       siteNameController.clear();
       selectedDateRange = null;
@@ -115,7 +83,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
 
   void _deleteUse(int useId) async {
     await dbHelper.deleteUse(useId);
-    _fetchToolUses();
+    _fetchToolUses(); // 사용 내역 삭제 후 목록 다시 불러오기
   }
 
   void _showDeleteConfirmationDialog(BuildContext context, Uses use) {
@@ -168,7 +136,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             SizedBox(height: 20),
             Row(
               children: [
-                SizedBox(width: 10),
                 Expanded(
                   child: TextField(
                     controller: amountController,
@@ -188,6 +155,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     ),
                   ),
                 ),
+                SizedBox(width: 10),
                 Expanded(
                   child: GestureDetector(
                     onTap: () => _selectDateRange(context),
@@ -228,38 +196,8 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   Uses use = toolUses[index];
                   return ListTile(
                     title: Text(
-                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]} ~ ${use.endDate.toLocal().toString().split(' ')[0]}'),
-                    subtitle: Row(
-                      children: [
-                        Column(
-                          children: [
-                            Text('사용량: ${use.amount}\n현장명: ${use.siteName}'),
-                          ],
-                        ),
-                        Expanded(
-                          child: Center(
-                            child: GestureDetector(
-                              onTap: () => _selectEndDate(context),
-                              child: AbsorbPointer(
-                                child: TextField(
-                                  controller: TextEditingController(
-                                    text: selectedDateRange != null // 삼항연산
-                                        ? "${selectedDateRange!.end.toLocal().toString().split(' ')[0]} 까지"
-                                        : '',
-                                  ),
-                                  readOnly: true,
-                                  decoration: InputDecoration(
-                                    labelText: '사용 종료일',
-                                    border: InputBorder.none,
-                                    suffixIcon: Icon(Icons.calendar_today),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
+                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]}'), // - ${use.endDate.toLocal().toString().split(' ')[0]}
+                    subtitle: Text('사용량: ${use.amount}\n현장명: ${use.siteName}'),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),
                       onPressed: () =>

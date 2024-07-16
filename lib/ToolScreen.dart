@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:onetop_tool_management/DB/database_helper.dart';
 import 'package:onetop_tool_management/DB/models.dart';
 import 'package:onetop_tool_management/use_detail.dart';
-import 'package:onetop_tool_management/design/colors.dart';
 
 class ToolsScreen extends StatefulWidget {
   @override
@@ -13,23 +12,37 @@ class ToolsScreen extends StatefulWidget {
 class _ToolsScreenState extends State<ToolsScreen> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Tools> toolsList = [];
+  List<Tools> filteredToolsList = [];
   final TextEditingController nameController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _refreshToolsList();
+    _loadToolsList();
+    searchController.addListener(_filterToolsList);
   }
 
-  Future<void> _refreshToolsList() async {
+  Future<void> _loadToolsList() async {
     List<Tools> tools = await dbHelper.getTools();
     for (var tool in tools) {
       int totalUsage = await dbHelper.getTotalUsageByToolId(tool.id!);
       tool.remainingQuantity = tool.quantity - totalUsage;
     }
+    tools.sort((a, b) => a.name.compareTo(b.name));
     setState(() {
       toolsList = tools;
+      filteredToolsList = tools; // 초기 목록 설정
+    });
+  }
+
+  void _filterToolsList() {
+    String searchQuery = searchController.text.toLowerCase();
+    setState(() {
+      filteredToolsList = toolsList
+          .where((tool) => tool.name.toLowerCase().contains(searchQuery))
+          .toList();
     });
   }
 
@@ -42,7 +55,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
       await dbHelper.insertTool(tool);
       nameController.clear();
       quantityController.clear();
-      _refreshToolsList();
+      _loadToolsList();
     }
   }
 
@@ -73,7 +86,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   void _deleteTool(int id) async {
     await dbHelper.deleteTool(id);
-    _refreshToolsList();
+    _loadToolsList();
   }
 
   void _editTool(Tools tool) {
@@ -111,9 +124,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     quantityController.text.isNotEmpty) {
                   tool.name = nameController.text;
                   tool.quantity = int.parse(quantityController.text);
-                  dbHelper.updateTool(tool);
-                  _refreshToolsList();
-                  Navigator.of(context).pop();
+                  dbHelper.updateTool(tool).then((_) {
+                    _loadToolsList(); // 도구 수정 후 목록 다시 불러오기
+                    Navigator.of(context).pop();
+                  });
                 }
               },
               child: Text('저장'),
@@ -124,11 +138,6 @@ class _ToolsScreenState extends State<ToolsScreen> {
     );
   }
 
-  Color _getBackgroundColor(Tools tool) {
-    double percentage = (tool.remainingQuantity / tool.quantity) * 100;
-    return ListColor.getColorForPercentage(percentage);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,51 +146,62 @@ class _ToolsScreenState extends State<ToolsScreen> {
       ),
       body: Column(
         children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                labelText: '품명 검색',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
           Expanded(
-            child: StreamBuilder<void>(
-              stream: dbHelper.toolStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.active) {
-                  _refreshToolsList();
-                }
-                return ListView.builder(
-                  itemCount: toolsList.length,
-                  itemBuilder: (context, index) {
-                    Tools tool = toolsList[index];
-                    return ListTile(
-                      tileColor: _getBackgroundColor(tool), // 배경색 설정
-                      title: Text(
-                        '${tool.name} (수량: ${tool.quantity}, 잔량: ${tool.remainingQuantity})',
+            child: ListView.builder(
+              itemCount: filteredToolsList.length,
+              itemBuilder: (context, index) {
+                Tools tool = filteredToolsList[index];
+                return ListTile(
+                  title: Row(
+                    children: [
+                      Expanded(flex: 2, child: Text(tool.name)),
+                      Spacer(),
+                      Expanded(flex: 2, child: Text('수량: ${tool.quantity}')),
+                      Spacer(),
+                      Expanded(
+                          flex: 2,
+                          child: Text(
+                              '불출량: ${tool.quantity - tool.remainingQuantity}')),
+                      Spacer(),
+                      Expanded(
+                          flex: 2,
+                          child: Text('잔여량: ${tool.remainingQuantity}')),
+                      Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () => _editTool(tool),
                       ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.edit),
-                            onPressed: () => _editTool(tool),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () =>
-                                _confirmDeleteTool(tool.id!, tool.name),
-                          ),
-                        ],
+                    ],
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () => _confirmDeleteTool(tool.id!, tool.name),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UseDetailScreen(toolId: tool.id!),
                       ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                UseDetailScreen(toolId: tool.id!),
-                          ),
-                        );
-                      },
-                    );
+                    ).then((_) {
+                      _loadToolsList(); // 도구 사용 기록 수정 후 돌아왔을 때 목록 다시 불러오기
+                    });
                   },
                 );
               },
             ),
           ),
+          // 도구 추가 입력란
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
