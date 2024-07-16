@@ -74,7 +74,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
         siteName: siteName,
       );
       await dbHelper.insertUse(use);
-      _fetchToolUses();
+      _fetchToolUses(); // 사용 내역 추가 후 목록 다시 불러오기
       amountController.clear();
       siteNameController.clear();
       selectedDateRange = null;
@@ -83,7 +83,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
 
   void _deleteUse(int useId) async {
     await dbHelper.deleteUse(useId);
-    _fetchToolUses();
+    _fetchToolUses(); // 사용 내역 삭제 후 목록 다시 불러오기
   }
 
   void _showDeleteConfirmationDialog(BuildContext context, Uses use) {
@@ -137,6 +137,26 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             Row(
               children: [
                 Expanded(
+                  child: TextField(
+                    controller: amountController,
+                    decoration: InputDecoration(
+                      labelText: '수량',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: siteNameController,
+                    decoration: InputDecoration(
+                      labelText: '현장명',
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
                   child: GestureDetector(
                     onTap: () => _selectDateRange(context),
                     child: AbsorbPointer(
@@ -153,26 +173,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                           suffixIcon: Icon(Icons.calendar_today),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: amountController,
-                    decoration: InputDecoration(
-                      labelText: '수량',
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  ),
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: siteNameController,
-                    decoration: InputDecoration(
-                      labelText: '현장명',
                     ),
                   ),
                 ),
@@ -196,7 +196,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   Uses use = toolUses[index];
                   return ListTile(
                     title: Text(
-                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]} - ${use.endDate.toLocal().toString().split(' ')[0]}'),
+                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]}'), // - ${use.endDate.toLocal().toString().split(' ')[0]}
                     subtitle: Text('사용량: ${use.amount}\n현장명: ${use.siteName}'),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),
