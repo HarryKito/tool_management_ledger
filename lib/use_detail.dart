@@ -169,34 +169,36 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                 ),
                 SizedBox(width: 10),
                 Expanded(
-                  child: Autocomplete<String>(
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty) {
-                        return const Iterable<String>.empty();
-                      }
-                      return siteNames.where((String option) {
-                        return option
-                            .contains(textEditingValue.text.toLowerCase());
-                      });
-                    },
-                    onSelected: (String selection) {
-                      setState(() {
-                        selectedSiteName = selection;
-                        siteNameController.text = selection;
-                      });
-                    },
-                    fieldViewBuilder: (BuildContext context,
-                        TextEditingController fieldTextEditingController,
-                        FocusNode fieldFocusNode,
-                        VoidCallback onFieldSubmitted) {
-                      return TextField(
-                        controller: fieldTextEditingController,
-                        focusNode: fieldFocusNode,
+                  child: Stack(
+                    children: [
+                      TextField(
+                        controller: siteNameController,
                         decoration: InputDecoration(
                           labelText: '현장명',
                         ),
-                      );
-                    },
+                      ),
+                      Positioned(
+                        right: 0,
+                        top: 8,
+                        child: DropdownButton<String>(
+                          value: selectedSiteName,
+                          icon: Icon(Icons.arrow_drop_down),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedSiteName = newValue;
+                              siteNameController.text = newValue ?? '';
+                            });
+                          },
+                          items: siteNames
+                              .map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(width: 10),
