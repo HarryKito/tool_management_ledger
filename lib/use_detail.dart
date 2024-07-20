@@ -15,15 +15,19 @@ class UseDetailScreen extends StatefulWidget {
 class _UseDetailScreenState extends State<UseDetailScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController siteNameController = TextEditingController();
+  final TextEditingController siteManController = TextEditingController();
   final DatabaseHelper dbHelper = DatabaseHelper();
   DateTimeRange? selectedDateRange;
   List<Uses> toolUses = [];
+  List<String> siteNames = [];
   String toolName = '';
+  String? selectedSiteName;
 
   @override
   void initState() {
     super.initState();
     _fetchToolData();
+    _fetchSiteNames();
   }
 
   void _fetchToolData() async {
@@ -40,6 +44,13 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     List<Uses> uses = await dbHelper.getUsesByToolId(widget.toolId);
     setState(() {
       toolUses = uses;
+    });
+  }
+
+  void _fetchSiteNames() async {
+    List<String> names = await dbHelper.getAllSiteNames();
+    setState(() {
+      siteNames = names;
     });
   }
 
@@ -63,9 +74,15 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
 
   void _recordUsage() async {
     final int amount = int.tryParse(amountController.text) ?? 0;
-    final String siteName = siteNameController.text;
+    final String siteName = siteNameController.text.isNotEmpty
+        ? siteNameController.text
+        : selectedSiteName ?? '';
+    final String siteMan = siteManController.text;
 
-    if (selectedDateRange != null && amount > 0 && siteName.isNotEmpty) {
+    if (selectedDateRange != null &&
+        amount > 0 &&
+        siteName.isNotEmpty &&
+        siteMan.isNotEmpty) {
       Uses use = Uses(
         toolId: widget.toolId,
         startDate: selectedDateRange!.start,
@@ -74,16 +91,20 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
         siteName: siteName,
       );
       await dbHelper.insertUse(use);
-      _fetchToolUses(); // 사용 내역 추가 후 목록 다시 불러오기
+      _fetchToolUses();
       amountController.clear();
       siteNameController.clear();
+      siteManController.clear();
       selectedDateRange = null;
+      setState(() {
+        selectedSiteName = null;
+      });
     }
   }
 
   void _deleteUse(int useId) async {
     await dbHelper.deleteUse(useId);
-    _fetchToolUses(); // 사용 내역 삭제 후 목록 다시 불러오기
+    _fetchToolUses();
   }
 
   void _showDeleteConfirmationDialog(BuildContext context, Uses use) {
@@ -148,10 +169,42 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                 ),
                 SizedBox(width: 10),
                 Expanded(
+                  child: Autocomplete<String>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return const Iterable<String>.empty();
+                      }
+                      return siteNames.where((String option) {
+                        return option
+                            .contains(textEditingValue.text.toLowerCase());
+                      });
+                    },
+                    onSelected: (String selection) {
+                      setState(() {
+                        selectedSiteName = selection;
+                        siteNameController.text = selection;
+                      });
+                    },
+                    fieldViewBuilder: (BuildContext context,
+                        TextEditingController fieldTextEditingController,
+                        FocusNode fieldFocusNode,
+                        VoidCallback onFieldSubmitted) {
+                      return TextField(
+                        controller: fieldTextEditingController,
+                        focusNode: fieldFocusNode,
+                        decoration: InputDecoration(
+                          labelText: '현장명',
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
                   child: TextField(
-                    controller: siteNameController,
+                    controller: siteManController,
                     decoration: InputDecoration(
-                      labelText: '현장명',
+                      labelText: '현장 담당자',
                     ),
                   ),
                 ),
@@ -196,7 +249,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   Uses use = toolUses[index];
                   return ListTile(
                     title: Text(
-                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]}'), // - ${use.endDate.toLocal().toString().split(' ')[0]}
+                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]}'),
                     subtitle: Text('사용량: ${use.amount}\n현장명: ${use.siteName}'),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),

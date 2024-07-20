@@ -111,4 +111,28 @@ class DatabaseHelper {
         'SELECT SUM(amount) as total FROM uses WHERE toolId = ?', [toolId]);
     return result.first['total'] != null ? result.first['total'] as int : 0;
   }
+
+// 모든 현장명 수집
+// 현장명 목록 불러올 떄 사용
+  Future<List<String>> getAllSiteNames() async {
+    final db = await database;
+    List<String> siteNames = [];
+
+    try {
+      var result = await db.rawQuery('SELECT DISTINCT site_name FROM uses');
+      if (result.isNotEmpty) {
+        siteNames = result
+            .map((row) =>
+                row['site_name'] != null ? row['site_name'] as String : '')
+            .toList();
+        // null이 아닌 경우에만 String으로 변환
+        siteNames.removeWhere((name) => name.isEmpty); // 빈 문자열 제거
+      }
+      print('Fetched site names: $siteNames'); // 결과 출력
+    } catch (e) {
+      print('Error fetching site names: $e');
+    }
+
+    return siteNames;
+  }
 }
