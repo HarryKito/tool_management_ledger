@@ -168,39 +168,72 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   ),
                 ),
                 SizedBox(width: 10),
+                // 현장명
                 Expanded(
-                  child: Stack(
-                    children: [
-                      TextField(
-                        controller: siteNameController,
+                  child: Autocomplete<String>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return const Iterable<String>.empty();
+                      }
+                      return siteNames.where((String option) {
+                        return option
+                            .contains(textEditingValue.text.toLowerCase());
+                      });
+                    },
+                    onSelected: (String selection) {
+                      setState(() {
+                        selectedSiteName = selection;
+                        siteNameController.text = selection;
+                      });
+                    },
+                    fieldViewBuilder: (BuildContext context,
+                        TextEditingController fieldTextEditingController,
+                        FocusNode fieldFocusNode,
+                        VoidCallback onFieldSubmitted) {
+                      return TextField(
+                        controller: fieldTextEditingController,
+                        focusNode: fieldFocusNode,
                         decoration: InputDecoration(
                           labelText: '현장명',
                         ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 8,
-                        child: DropdownButton<String>(
-                          value: selectedSiteName,
-                          icon: Icon(Icons.arrow_drop_down),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              selectedSiteName = newValue;
-                              siteNameController.text = newValue ?? '';
-                            });
-                          },
-                          items: siteNames
-                              .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
+                        onChanged: (String value) {
+                          setState(() {
+                            selectedSiteName = null;
+                          });
+                        },
+                      );
+                    },
+                    optionsViewBuilder: (BuildContext context,
+                        AutocompleteOnSelected<String> onSelected,
+                        Iterable<String> options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4.0,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width / 3,
+                            child: ListView.builder(
+                              padding: EdgeInsets.all(8.0),
+                              itemCount: options.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                final String option = options.elementAt(index);
+                                return GestureDetector(
+                                  onTap: () {
+                                    onSelected(option);
+                                  },
+                                  child: ListTile(
+                                    title: Text(option),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
+                // 여기까지 현장명
                 SizedBox(width: 10),
                 Expanded(
                   child: TextField(
@@ -223,7 +256,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                         ),
                         readOnly: true,
                         decoration: InputDecoration(
-                          labelText: '사용 기간',
+                          labelText: '사용 시작일',
                           border: InputBorder.none,
                           suffixIcon: Icon(Icons.calendar_today),
                         ),
