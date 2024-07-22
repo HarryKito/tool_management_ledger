@@ -58,18 +58,18 @@ class Tools {
 // 사용량
 // 사용처
 class Uses {
-  int? id;
-  int toolId;
-  DateTime startDate;
-  DateTime endDate;
-  int amount;
-  String siteName;
+  final int? id;
+  final int toolId;
+  final DateTime startDate;
+  final DateTime? endDate;
+  final int amount;
+  final String siteName;
 
   Uses({
     this.id,
     required this.toolId,
     required this.startDate,
-    required this.endDate,
+    this.endDate,
     required this.amount,
     required this.siteName,
   });
@@ -78,10 +78,10 @@ class Uses {
     return {
       'id': id,
       'toolId': toolId,
-      'start_date': startDate.toIso8601String(),
-      'end_date': endDate.toIso8601String(),
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
       'amount': amount,
-      'site_name': siteName,
+      'siteName': siteName,
     };
   }
 
@@ -89,10 +89,10 @@ class Uses {
     return Uses(
       id: map['id'],
       toolId: map['toolId'],
-      startDate: DateTime.parse(map['start_date']),
-      endDate: DateTime.parse(map['end_date']),
+      startDate: DateTime.parse(map['startDate']),
+      endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
       amount: map['amount'],
-      siteName: map['site_name'],
+      siteName: map['siteName'],
     );
   }
 }

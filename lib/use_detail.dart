@@ -76,8 +76,13 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     final int amount = int.tryParse(amountController.text) ?? 0;
     final String siteName = siteNameController.text.isNotEmpty
         ? siteNameController.text
-        : selectedSiteName ?? '';
+        : selectedSiteName ?? 'NULL';
     final String siteMan = siteManController.text;
+
+    print('Selected Date Range: $selectedDateRange');
+    print('Amount: $amount');
+    print('Site Name: $siteName');
+    print('Site Man: $siteMan');
 
     if (selectedDateRange != null &&
         amount > 0 &&
@@ -86,10 +91,11 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
       Uses use = Uses(
         toolId: widget.toolId,
         startDate: selectedDateRange!.start,
-        endDate: selectedDateRange!.end,
+        endDate: selectedDateRange?.end, // 종료일이 null일 수 있음
         amount: amount,
         siteName: siteName,
       );
+      print('Attempting to insert use: $use'); // 디버깅 출력
       await dbHelper.insertUse(use);
       _fetchToolUses();
       amountController.clear();
@@ -99,6 +105,8 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
       setState(() {
         selectedSiteName = null;
       });
+    } else {
+      print('Invalid input data'); // 디버깅 출력
     }
   }
 
@@ -115,7 +123,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
           title: Text('삭제 확인'),
           content: Text(
             '사용 내역을 삭제하시겠습니까?\n'
-            '사용 기간: ${use.startDate.toLocal().toString().split(' ')[0]} ~ ${use.endDate.toLocal().toString().split(' ')[0]}\n'
+            '사용 기간: ${use.startDate.toLocal().toString().split(' ')[0]} ~ ${use.endDate?.toLocal().toString().split(' ')[0] ?? '종료일 없음'}\n'
             '사용량: ${use.amount}\n'
             '현장명: ${use.siteName}',
           ),
@@ -251,7 +259,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                       child: TextField(
                         controller: TextEditingController(
                           text: selectedDateRange != null
-                              ? "${selectedDateRange!.start.toLocal().toString().split(' ')[0]} ~ ${selectedDateRange!.end.toLocal().toString().split(' ')[0]}"
+                              ? "${selectedDateRange!.start.toLocal().toString().split(' ')[0]} ~ ${selectedDateRange?.end?.toLocal().toString().split(' ')[0] ?? ''}"
                               : '',
                         ),
                         readOnly: true,

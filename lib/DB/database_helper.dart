@@ -22,6 +22,28 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future _onCreate(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE uses (
+        id INTEGER PRIMARY KEY,
+        toolId INTEGER NOT NULL,
+        startDate TEXT NOT NULL,
+        endDate TEXT,
+        amount INTEGER NOT NULL,
+        siteName TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        ALTER TABLE uses ADD COLUMN startDate TEXT;
+        ALTER TABLE uses ADD COLUMN endDate TEXT;
+      ''');
+    }
+  }
+
   Future<Database> _initDatabase() async {
     return openDatabase(
       join(await getDatabasesPath(), 'tools_database.db'),
@@ -70,11 +92,20 @@ class DatabaseHelper {
     _toolStreamController.add(null); // Emit an event when a tool is deleted
   }
 
-  Future<void> insertUse(Uses use) async {
-    final db = await database;
-    await db.insert('uses', use.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace);
-    _toolStreamController.add(null); // Emit an event when a use is added
+  Future<int> insertUse(Uses use) async {
+    Database db = await database;
+    String? endDate =
+        use.endDate != null ? use.endDate!.toIso8601String() : null;
+
+    return await db.rawInsert(
+        'INSERT OR REPLACE INTO uses (toolId, startDate, endDate, amount, siteName) VALUES (?, ?, ?, ?, ?)',
+        [
+          use.toolId,
+          use.startDate.toIso8601String(),
+          endDate,
+          use.amount,
+          use.siteName
+        ]);
   }
 
   Future<void> deleteUse(int id) async {
@@ -112,8 +143,8 @@ class DatabaseHelper {
     return result.first['total'] != null ? result.first['total'] as int : 0;
   }
 
-// 모든 현장명 수집
-// 현장명 목록 불러올 떄 사용
+  // 모든 현장명 수집
+  // 현장명 목록 불러올 떄 사용
   Future<List<String>> getAllSiteNames() async {
     final db = await database;
     List<String> siteNames = [];
