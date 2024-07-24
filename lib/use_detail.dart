@@ -76,7 +76,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     final int amount = int.tryParse(amountController.text) ?? 0;
     final String siteName = siteNameController.text.isNotEmpty
         ? siteNameController.text
-        : selectedSiteName ?? 'NULL';
+        : selectedSiteName ?? '';
     final String siteMan = siteManController.text;
 
     print('Selected Date Range: $selectedDateRange');
@@ -185,57 +185,32 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                       }
                       return siteNames.where((String option) {
                         return option
+                            .toLowerCase()
                             .contains(textEditingValue.text.toLowerCase());
                       });
                     },
                     onSelected: (String selection) {
                       setState(() {
                         selectedSiteName = selection;
-                        siteNameController.text = selection;
+                        siteNameController.text =
+                            selection; // 입력된 텍스트를 컨트롤러에 설정
                       });
                     },
                     fieldViewBuilder: (BuildContext context,
                         TextEditingController fieldTextEditingController,
                         FocusNode fieldFocusNode,
                         VoidCallback onFieldSubmitted) {
+                      // 자동 완성 입력 필드와 siteNameController 동기화
+                      fieldTextEditingController.addListener(() {
+                        siteNameController.text =
+                            fieldTextEditingController.text;
+                      });
+
                       return TextField(
                         controller: fieldTextEditingController,
                         focusNode: fieldFocusNode,
                         decoration: InputDecoration(
                           labelText: '현장명',
-                        ),
-                        onChanged: (String value) {
-                          setState(() {
-                            selectedSiteName = null;
-                          });
-                        },
-                      );
-                    },
-                    optionsViewBuilder: (BuildContext context,
-                        AutocompleteOnSelected<String> onSelected,
-                        Iterable<String> options) {
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4.0,
-                          child: Container(
-                            width: MediaQuery.of(context).size.width / 3,
-                            child: ListView.builder(
-                              padding: EdgeInsets.all(8.0),
-                              itemCount: options.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final String option = options.elementAt(index);
-                                return GestureDetector(
-                                  onTap: () {
-                                    onSelected(option);
-                                  },
-                                  child: ListTile(
-                                    title: Text(option),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
                         ),
                       );
                     },

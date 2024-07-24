@@ -1,5 +1,4 @@
 import 'dart:async';
-// import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:onetop_tool_management/DB/models.dart';
@@ -27,10 +26,10 @@ class DatabaseHelper {
       CREATE TABLE uses (
         id INTEGER PRIMARY KEY,
         toolId INTEGER NOT NULL,
-        startDate TEXT NOT NULL,
-        endDate TEXT,
+        start_date TEXT NOT NULL,
+        end_date TEXT,
         amount INTEGER NOT NULL,
-        siteName TEXT NOT NULL
+        site_name TEXT NOT NULL
       )
     ''');
   }
@@ -38,8 +37,8 @@ class DatabaseHelper {
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('''
-        ALTER TABLE uses ADD COLUMN startDate TEXT;
-        ALTER TABLE uses ADD COLUMN endDate TEXT;
+        ALTER TABLE uses ADD COLUMN start_date TEXT;
+        ALTER TABLE uses ADD COLUMN end_date TEXT;
       ''');
     }
   }
@@ -47,14 +46,7 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     return openDatabase(
       join(await getDatabasesPath(), 'tools_database.db'),
-      onCreate: (db, version) async {
-        await db.execute(
-          'CREATE TABLE tools(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, quantity INTEGER)',
-        );
-        await db.execute(
-          'CREATE TABLE uses(id INTEGER PRIMARY KEY AUTOINCREMENT, toolId INTEGER, start_date TEXT, end_date TEXT, amount INTEGER, site_name TEXT)',
-        );
-      },
+      onCreate: _onCreate,
       version: 1,
     );
   }
@@ -98,7 +90,7 @@ class DatabaseHelper {
         use.endDate != null ? use.endDate!.toIso8601String() : null;
 
     return await db.rawInsert(
-        'INSERT OR REPLACE INTO uses (toolId, startDate, endDate, amount, siteName) VALUES (?, ?, ?, ?, ?)',
+        'INSERT OR REPLACE INTO uses (toolId, start_date, end_date, amount, site_name) VALUES (?, ?, ?, ?, ?)',
         [
           use.toolId,
           use.startDate.toIso8601String(),
@@ -112,6 +104,21 @@ class DatabaseHelper {
     final db = await database;
     await db.delete('uses', where: 'id = ?', whereArgs: [id]);
     _toolStreamController.add(null); // Emit an event when a use is deleted
+  }
+
+// 사용 내역 업데이트하기 (수정)
+// FIXME:
+//   사용내역 수정버튼이랑 연결.
+
+  Future<void> updateUse(Uses use) async {
+    final db = await database;
+    await db.update(
+      'uses',
+      use.toMap(),
+      where: 'id = ?',
+      whereArgs: [use.id],
+    );
+    _toolStreamController.add(null); // Emit an event when a use is updated
   }
 
   Future<List<Uses>> getUsesByToolId(int toolId) async {

@@ -1,6 +1,3 @@
-// 도구관리 데이터베이스 모델
-
-//
 // ----- 도구 모델 -----
 //
 // 품번
@@ -48,7 +45,6 @@ class Tools {
   }
 }
 
-//
 // ----- 사용 기록모델 -----
 //
 // 사용번호
@@ -78,10 +74,10 @@ class Uses {
     return {
       'id': id,
       'toolId': toolId,
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate?.toIso8601String(),
+      'start_date': startDate.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
       'amount': amount,
-      'siteName': siteName,
+      'site_name': siteName,
     };
   }
 
@@ -89,10 +85,10 @@ class Uses {
     return Uses(
       id: map['id'],
       toolId: map['toolId'],
-      startDate: DateTime.parse(map['startDate']),
-      endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
+      startDate: DateTime.parse(map['start_date']),
+      endDate: map['end_date'] != null ? DateTime.parse(map['end_date']) : null,
       amount: map['amount'],
-      siteName: map['siteName'],
+      siteName: map['site_name'],
     );
   }
 }
