@@ -10,3 +10,6 @@ Tool management project for Onetop.
         입고일 추가 입고일 != NULL
             색 변경 (직관성)
     
+FIXME:
+> bug : 수량 < 불출량
+> bug : 불출량 (range --> date selector)
