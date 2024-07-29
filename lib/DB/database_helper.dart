@@ -23,15 +23,22 @@ class DatabaseHelper {
 
   Future _onCreate(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE uses (
-        id INTEGER PRIMARY KEY,
-        toolId INTEGER NOT NULL,
-        start_date TEXT NOT NULL,
-        end_date TEXT,
-        amount INTEGER NOT NULL,
-        site_name TEXT NOT NULL
-      )
-    ''');
+    CREATE TABLE tools (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      quantity INTEGER NOT NULL
+    )
+  ''');
+    await db.execute('''
+    CREATE TABLE uses (
+      id INTEGER PRIMARY KEY,
+      toolId INTEGER NOT NULL,
+      start_date TEXT NOT NULL,
+      end_date TEXT,
+      amount INTEGER NOT NULL,
+      site_name TEXT NOT NULL
+    )
+  ''');
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
