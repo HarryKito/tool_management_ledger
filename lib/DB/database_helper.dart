@@ -21,6 +21,45 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future<void> updateToolQuantity(int toolId, int quantityChange) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      // 현재 잔여 수량을 조회
+      List<Map<String, dynamic>> toolList = await txn.query(
+        'tools',
+        where: 'id = ?',
+        whereArgs: [toolId],
+      );
+
+      if (toolList.isNotEmpty) {
+        int currentQuantity = toolList.first['quantity'];
+        int newQuantity = currentQuantity + quantityChange;
+
+        // 잔여 수량 업데이트
+        await txn.update(
+          'tools',
+          {'quantity': newQuantity},
+          where: 'id = ?',
+          whereArgs: [toolId],
+        );
+      }
+    });
+  }
+
+  Future<Uses?> getUseById(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> maps = await db.query(
+      'uses',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.length > 0) {
+      return Uses.fromMap(maps.first);
+    }
+    return null;
+  }
+
   Future _onCreate(Database db, int version) async {
     await db.execute('''
     CREATE TABLE tools (
@@ -36,16 +75,16 @@ class DatabaseHelper {
       start_date TEXT NOT NULL,
       end_date TEXT,
       amount INTEGER NOT NULL,
-      site_name TEXT NOT NULL
+      site_name TEXT NOT NULL,
+      siteMan TEXT NOT NULL
     )
   ''');
   }
 
-  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < newVersion) {
       await db.execute('''
-        ALTER TABLE uses ADD COLUMN start_date TEXT;
-        ALTER TABLE uses ADD COLUMN end_date TEXT;
+        ALTER TABLE uses ADD COLUMN siteMan TEXT NOT NULL DEFAULT ''
       ''');
     }
   }
@@ -85,10 +124,22 @@ class DatabaseHelper {
     });
   }
 
-  Future<void> deleteTool(int id) async {
+// 도구목록 삭제하기.
+  Future<void> deleteTool(int toolId) async {
     final db = await database;
-    await db.delete('tools', where: 'id = ?', whereArgs: [id]);
-    _toolStreamController.add(null); // Emit an event when a tool is deleted
+    await db.transaction((txn) async {
+      await txn.delete(
+        'uses',
+        where: 'id = ?',
+        whereArgs: [toolId],
+      );
+
+      await txn.delete(
+        'tools',
+        where: 'id = ?',
+        whereArgs: [toolId],
+      );
+    });
   }
 
   Future<int> insertUse(Uses use) async {
@@ -97,13 +148,14 @@ class DatabaseHelper {
         use.endDate != null ? use.endDate!.toIso8601String() : null;
 
     return await db.rawInsert(
-        'INSERT OR REPLACE INTO uses (toolId, start_date, end_date, amount, site_name) VALUES (?, ?, ?, ?, ?)',
+        'INSERT OR REPLACE INTO uses (toolId, start_date, end_date, amount, site_name, siteMan) VALUES (?, ?, ?, ?, ?, ?)',
         [
           use.toolId,
           use.startDate.toIso8601String(),
           endDate,
           use.amount,
-          use.siteName
+          use.siteName,
+          use.siteMan
         ]);
   }
 

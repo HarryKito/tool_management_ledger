@@ -107,7 +107,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
               ),
               TextField(
                 controller: quantityController,
-                decoration: InputDecoration(labelText: '수량'),
+                decoration: InputDecoration(labelText: '변경 수량'),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),

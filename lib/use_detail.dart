@@ -17,10 +17,11 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   final TextEditingController siteNameController = TextEditingController();
   final TextEditingController siteManController = TextEditingController();
   final DatabaseHelper dbHelper = DatabaseHelper();
-  DateTimeRange? selectedDateRange;
+  DateTime? selectedDate; // DateTimeRange를 DateTime으로 변경
   List<Uses> toolUses = [];
   List<String> siteNames = [];
   String toolName = '';
+  int toolQuantity = 0;
   String? selectedSiteName;
 
   @override
@@ -35,6 +36,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     if (tool != null) {
       setState(() {
         toolName = tool.name;
+        toolQuantity = tool.quantity;
       });
     }
     _fetchToolUses();
@@ -54,20 +56,16 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     });
   }
 
-  Future<void> _selectDateRange(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDateRange: selectedDateRange ??
-          DateTimeRange(
-            start: DateTime.now(),
-            end: DateTime.now().add(Duration(days: 1)),
-          ),
+      initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (picked != null && picked != selectedDateRange) {
+    if (picked != null && picked != selectedDate) {
       setState(() {
-        selectedDateRange = picked;
+        selectedDate = picked;
       });
     }
   }
@@ -76,32 +74,37 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     final int amount = int.tryParse(amountController.text) ?? 0;
     final String siteName = siteNameController.text.isNotEmpty
         ? siteNameController.text
-        : selectedSiteName ?? '';
+        : selectedSiteName ?? 'NULL';
     final String siteMan = siteManController.text;
 
-    print('Selected Date Range: $selectedDateRange');
-    print('Amount: $amount');
-    print('Site Name: $siteName');
-    print('Site Man: $siteMan');
-
-    if (selectedDateRange != null &&
+    if (selectedDate != null &&
         amount > 0 &&
         siteName.isNotEmpty &&
         siteMan.isNotEmpty) {
+      if (amount > toolQuantity) {
+        _showWarningDialog(context, '불출량이 현재 수량을 초과합니다.');
+        return;
+      }
       Uses use = Uses(
         toolId: widget.toolId,
-        startDate: selectedDateRange!.start,
-        endDate: selectedDateRange?.end, // 종료일이 null일 수 있음
+        startDate: selectedDate!,
+        endDate: null, // 종료일 없음
         amount: amount,
         siteName: siteName,
+        siteMan: siteMan,
       );
-      print('Attempting to insert use: $use'); // 디버깅 출력
       await dbHelper.insertUse(use);
+
+      // 사용량을 툴의 총량에서 차감
+      setState(() {
+        toolQuantity -= amount;
+      });
+
       _fetchToolUses();
       amountController.clear();
       siteNameController.clear();
       siteManController.clear();
-      selectedDateRange = null;
+      selectedDate = null;
       setState(() {
         selectedSiteName = null;
       });
@@ -115,6 +118,26 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     _fetchToolUses();
   }
 
+  void _showWarningDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('경고'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('확인'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showDeleteConfirmationDialog(BuildContext context, Uses use) {
     showDialog(
       context: context,
@@ -123,9 +146,10 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
           title: Text('삭제 확인'),
           content: Text(
             '사용 내역을 삭제하시겠습니까?\n'
-            '사용 기간: ${use.startDate.toLocal().toString().split(' ')[0]} ~ ${use.endDate?.toLocal().toString().split(' ')[0] ?? '종료일 없음'}\n'
+            '불출일: ${use.startDate.toLocal().toString().split(' ')[0]} \n'
             '사용량: ${use.amount}\n'
-            '현장명: ${use.siteName}',
+            '현장명: ${use.siteName}\n'
+            '현장 담당자: ${use.siteMan}',
           ),
           actions: <Widget>[
             TextButton(
@@ -162,6 +186,11 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
               '선택 제품명 : $toolName',
               style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
             ),
+            // FIXME: BUG FIX. (issue on README)
+            // Text(
+            //   '잔여 수량 : $toolQuantity',
+            //   style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+            // ),
             SizedBox(height: 20),
             Row(
               children: [
@@ -185,32 +214,57 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                       }
                       return siteNames.where((String option) {
                         return option
-                            .toLowerCase()
                             .contains(textEditingValue.text.toLowerCase());
                       });
                     },
                     onSelected: (String selection) {
                       setState(() {
                         selectedSiteName = selection;
-                        siteNameController.text =
-                            selection; // 입력된 텍스트를 컨트롤러에 설정
+                        siteNameController.text = selection;
                       });
                     },
                     fieldViewBuilder: (BuildContext context,
                         TextEditingController fieldTextEditingController,
                         FocusNode fieldFocusNode,
                         VoidCallback onFieldSubmitted) {
-                      // 자동 완성 입력 필드와 siteNameController 동기화
-                      fieldTextEditingController.addListener(() {
-                        siteNameController.text =
-                            fieldTextEditingController.text;
-                      });
-
                       return TextField(
                         controller: fieldTextEditingController,
                         focusNode: fieldFocusNode,
                         decoration: InputDecoration(
                           labelText: '현장명',
+                        ),
+                        onChanged: (String value) {
+                          setState(() {
+                            selectedSiteName = null;
+                          });
+                        },
+                      );
+                    },
+                    optionsViewBuilder: (BuildContext context,
+                        AutocompleteOnSelected<String> onSelected,
+                        Iterable<String> options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4.0,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width / 3,
+                            child: ListView.builder(
+                              padding: EdgeInsets.all(8.0),
+                              itemCount: options.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                final String option = options.elementAt(index);
+                                return GestureDetector(
+                                  onTap: () {
+                                    onSelected(option);
+                                  },
+                                  child: ListTile(
+                                    title: Text(option),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       );
                     },
@@ -229,17 +283,17 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                 SizedBox(width: 10),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => _selectDateRange(context),
+                    onTap: () => _selectDate(context),
                     child: AbsorbPointer(
                       child: TextField(
                         controller: TextEditingController(
-                          text: selectedDateRange != null
-                              ? "${selectedDateRange!.start.toLocal().toString().split(' ')[0]} ~ ${selectedDateRange?.end?.toLocal().toString().split(' ')[0] ?? ''}"
+                          text: selectedDate != null
+                              ? selectedDate!.toLocal().toString().split(' ')[0]
                               : '',
                         ),
                         readOnly: true,
                         decoration: InputDecoration(
-                          labelText: '사용 시작일',
+                          labelText: '불출일',
                           border: InputBorder.none,
                           suffixIcon: Icon(Icons.calendar_today),
                         ),
@@ -264,15 +318,19 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
               child: ListView.builder(
                 itemCount: toolUses.length,
                 itemBuilder: (context, index) {
-                  Uses use = toolUses[index];
+                  final use = toolUses[index];
                   return ListTile(
                     title: Text(
-                        '사용 일자: ${use.startDate.toLocal().toString().split(' ')[0]}'),
-                    subtitle: Text('사용량: ${use.amount}\n현장명: ${use.siteName}'),
+                      '현장명: ${use.siteName} (담당자: ${use.siteMan})',
+                    ),
+                    subtitle: Text(
+                      '불출일: ${use.startDate.toLocal().toString().split(' ')[0]}, 사용량: ${use.amount}',
+                    ),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),
-                      onPressed: () =>
-                          _showDeleteConfirmationDialog(context, use),
+                      onPressed: () {
+                        _showDeleteConfirmationDialog(context, use);
+                      },
                     ),
                   );
                 },

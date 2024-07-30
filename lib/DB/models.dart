@@ -60,6 +60,7 @@ class Uses {
   final DateTime? endDate;
   final int amount;
   final String siteName;
+  final String siteMan;
 
   Uses({
     this.id,
@@ -68,6 +69,7 @@ class Uses {
     this.endDate,
     required this.amount,
     required this.siteName,
+    required this.siteMan,
   });
 
   Map<String, dynamic> toMap() {
@@ -78,6 +80,7 @@ class Uses {
       'end_date': endDate?.toIso8601String(),
       'amount': amount,
       'site_name': siteName,
+      'siteMan': siteMan,
     };
   }
 
@@ -89,6 +92,7 @@ class Uses {
       endDate: map['end_date'] != null ? DateTime.parse(map['end_date']) : null,
       amount: map['amount'],
       siteName: map['site_name'],
+      siteMan: map['siteMan'],
     );
   }
 }

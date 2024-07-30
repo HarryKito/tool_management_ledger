@@ -11,5 +11,4 @@ Tool management project for Onetop.
             색 변경 (직관성)
     
 FIXME:
-> bug : 수량 < 불출량
-> bug : 불출량 (range --> date selector)
+> bug : 도구 상세 목록 --> 잔여수량 (실제 데이터 미반영)
