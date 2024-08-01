@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:onetop_tool_management/DB/database_helper.dart';
 import 'package:onetop_tool_management/DB/models.dart';
 import 'package:onetop_tool_management/use_detail.dart';
+import 'package:onetop_tool_management/SiteDetail.dart'; // 새로운 화면 import
 
 class ToolsScreen extends StatefulWidget {
   @override
@@ -13,6 +14,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Tools> toolsList = [];
   List<Tools> filteredToolsList = [];
+  List<String> siteNames = [];
   final TextEditingController nameController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
@@ -22,6 +24,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
     super.initState();
     _loadToolsList();
     searchController.addListener(_filterToolsList);
+    _loadSiteNames();
   }
 
   Future<void> _loadToolsList() async {
@@ -33,7 +36,14 @@ class _ToolsScreenState extends State<ToolsScreen> {
     tools.sort((a, b) => a.name.compareTo(b.name));
     setState(() {
       toolsList = tools;
-      filteredToolsList = tools; // 초기 목록 설정
+      filteredToolsList = tools;
+    });
+  }
+
+  Future<void> _loadSiteNames() async {
+    List<String> names = await dbHelper.getAllSiteNames();
+    setState(() {
+      siteNames = names;
     });
   }
 
@@ -48,15 +58,41 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   void _addTool() async {
     if (nameController.text.isNotEmpty && quantityController.text.isNotEmpty) {
-      Tools tool = Tools(
-        name: nameController.text,
-        quantity: int.parse(quantityController.text),
-      );
-      await dbHelper.insertTool(tool);
-      nameController.clear();
-      quantityController.clear();
-      _loadToolsList();
+      String newName = nameController.text;
+      bool isDuplicate = toolsList.any((tool) => tool.name == newName);
+
+      if (isDuplicate) {
+        _showDuplicateWarning(newName);
+      } else {
+        Tools tool = Tools(
+          name: newName,
+          quantity: int.parse(quantityController.text),
+        );
+        await dbHelper.insertTool(tool);
+        nameController.clear();
+        quantityController.clear();
+        await _loadToolsList();
+        await _loadSiteNames(); // Load site names after adding a tool
+      }
     }
+  }
+
+  void _showDuplicateWarning(String name) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('중복된 품명'),
+          content: Text('\'$name\'(은)는 이미 존재합니다. 다른 이름을 사용해주세요.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _confirmDeleteTool(int id, String name) {
@@ -86,7 +122,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   void _deleteTool(int id) async {
     await dbHelper.deleteTool(id);
-    _loadToolsList();
+    await _loadToolsList();
+    await _loadSiteNames(); // Load site names after deleting a tool
   }
 
   void _editTool(Tools tool) {
@@ -119,15 +156,15 @@ class _ToolsScreenState extends State<ToolsScreen> {
               child: Text('취소'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 if (nameController.text.isNotEmpty &&
                     quantityController.text.isNotEmpty) {
                   tool.name = nameController.text;
                   tool.quantity = int.parse(quantityController.text);
-                  dbHelper.updateTool(tool).then((_) {
-                    _loadToolsList(); // 도구 수정 후 목록 다시 불러오기
-                    Navigator.of(context).pop();
-                  });
+                  await dbHelper.updateTool(tool);
+                  await _loadToolsList(); // 도구 수정 후 목록 다시 불러오기
+                  await _loadSiteNames(); // Load site names after editing a tool
+                  Navigator.of(context).pop();
                 }
               },
               child: Text('저장'),
@@ -144,87 +181,141 @@ class _ToolsScreenState extends State<ToolsScreen> {
       appBar: AppBar(
         title: Text('도구 관리 대장'),
       ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                labelText: '품명 검색',
-                prefixIcon: Icon(Icons.search),
-              ),
-            ),
-          ),
+      body: Row(
+        children: [
           Expanded(
-            child: ListView.builder(
-              itemCount: filteredToolsList.length,
-              itemBuilder: (context, index) {
-                Tools tool = filteredToolsList[index];
-                return ListTile(
-                  title: Row(
-                    children: [
-                      Expanded(flex: 2, child: Text(tool.name)),
-                      Spacer(),
-                      Expanded(flex: 2, child: Text('수량: ${tool.quantity}')),
-                      Spacer(),
+            flex: 3,
+            child: Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      labelText: '품명 검색',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: filteredToolsList.length,
+                    itemBuilder: (context, index) {
+                      Tools tool = filteredToolsList[index];
+                      return ListTile(
+                        title: Row(
+                          children: [
+                            Expanded(flex: 2, child: Text(tool.name)),
+                            Spacer(),
+                            Expanded(
+                                flex: 2, child: Text('수량: ${tool.quantity}')),
+                            Spacer(),
+                            Expanded(
+                                flex: 2,
+                                child: Text(
+                                    '불출량: ${tool.quantity - tool.remainingQuantity}')),
+                            Spacer(),
+                            Expanded(
+                                flex: 2,
+                                child: Text('잔여량: ${tool.remainingQuantity}')),
+                            Spacer(),
+                            IconButton(
+                              icon: Icon(Icons.edit),
+                              onPressed: () => _editTool(tool),
+                            ),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () =>
+                              _confirmDeleteTool(tool.id!, tool.name),
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  UseDetailScreen(toolId: tool.id!),
+                            ),
+                          ).then((_) async {
+                            await _loadToolsList(); // 도구 사용 기록 수정 후 돌아왔을 때 목록 다시 불러오기
+                            await _loadSiteNames(); // Load site names after returning from use details screen
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                // 도구 추가 입력란
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: <Widget>[
                       Expanded(
-                          flex: 2,
-                          child: Text(
-                              '불출량: ${tool.quantity - tool.remainingQuantity}')),
-                      Spacer(),
+                        child: TextField(
+                          controller: nameController,
+                          decoration: InputDecoration(labelText: '품명'),
+                          onSubmitted: (value) => _addTool(),
+                        ),
+                      ),
+                      SizedBox(width: 10),
                       Expanded(
-                          flex: 2,
-                          child: Text('잔여량: ${tool.remainingQuantity}')),
-                      Spacer(),
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () => _editTool(tool),
+                        child: TextField(
+                          controller: quantityController,
+                          decoration: InputDecoration(labelText: '수량'),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
+                          onSubmitted: (value) => _addTool(),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: _addTool,
+                        child: Text('추가'),
                       ),
                     ],
                   ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () => _confirmDeleteTool(tool.id!, tool.name),
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UseDetailScreen(toolId: tool.id!),
-                      ),
-                    ).then((_) {
-                      _loadToolsList(); // 도구 사용 기록 수정 후 돌아왔을 때 목록 다시 불러오기
-                    });
-                  },
-                );
-              },
+                ),
+              ],
             ),
           ),
-          // 도구 추가 입력란
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(labelText: '품명'),
+          VerticalDivider(
+            width: 1,
+            thickness: 1,
+            color: Colors.grey,
+          ),
+          Expanded(
+            flex: 1,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    '현장명 목록',
+                    style:
+                        TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
                   ),
                 ),
-                SizedBox(width: 10),
                 Expanded(
-                  child: TextField(
-                    controller: quantityController,
-                    decoration: InputDecoration(labelText: '수량'),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  child: ListView.builder(
+                    itemCount: siteNames.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        title: Text(siteNames[index]),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  SiteDetailScreen(siteName: siteNames[index]),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
-                ),
-                SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: _addTool,
-                  child: Text('추가'),
                 ),
               ],
             ),

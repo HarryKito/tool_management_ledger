@@ -222,7 +222,7 @@ class DatabaseHelper {
             .map((row) =>
                 row['site_name'] != null ? row['site_name'] as String : '')
             .toList();
-        // null이 아닌 경우에만 String으로 변환
+        // null이 아닌 경우에만 String으로
         siteNames.removeWhere((name) => name.isEmpty); // 빈 문자열 제거
       }
       print('Fetched site names: $siteNames'); // 결과 출력

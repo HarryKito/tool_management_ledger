@@ -17,7 +17,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   final TextEditingController siteNameController = TextEditingController();
   final TextEditingController siteManController = TextEditingController();
   final DatabaseHelper dbHelper = DatabaseHelper();
-  DateTime? selectedDate; // DateTimeRange를 DateTime으로 변경
+  DateTime? selectedDate;
   List<Uses> toolUses = [];
   List<String> siteNames = [];
   String toolName = '';
@@ -72,9 +72,11 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
 
   void _recordUsage() async {
     final int amount = int.tryParse(amountController.text) ?? 0;
-    final String siteName = siteNameController.text.isNotEmpty
-        ? siteNameController.text
-        : selectedSiteName ?? 'NULL';
+    // final String siteName = selectedSiteName?.isEmpty == true ? selectedSiteName! : siteNameController.text;
+    // final String siteName = siteNameController.text.isNotEmpty
+    //     ? siteNameController.text
+    //     : selectedSiteName ?? 'NULL';
+    final String siteName = siteNameController.text;
     final String siteMan = siteManController.text;
 
     if (selectedDate != null &&
@@ -110,6 +112,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
       });
     } else {
       print('Invalid input data'); // 디버깅 출력
+      print(" site name : ${siteName}");
     }
   }
 
@@ -194,6 +197,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             SizedBox(height: 20),
             Row(
               children: [
+                // 수량 입력란
                 Expanded(
                   child: TextField(
                     controller: amountController,
@@ -205,6 +209,8 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   ),
                 ),
                 SizedBox(width: 10),
+                // 수량 입력란 끝
+
                 // 현장명
                 Expanded(
                   child: Autocomplete<String>(
@@ -228,7 +234,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                         FocusNode fieldFocusNode,
                         VoidCallback onFieldSubmitted) {
                       return TextField(
-                        controller: fieldTextEditingController,
+                        controller: siteNameController,
                         focusNode: fieldFocusNode,
                         decoration: InputDecoration(
                           labelText: '현장명',
@@ -271,6 +277,8 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   ),
                 ),
                 // 여기까지 현장명
+
+                // 현장 담당자
                 SizedBox(width: 10),
                 Expanded(
                   child: TextField(
@@ -301,6 +309,8 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     ),
                   ),
                 ),
+                // 여기까지 현장 담당자
+
                 SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: _recordUsage,
