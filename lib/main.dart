@@ -1,18 +1,18 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:onetop_tool_management/ToolScreen.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-// 프로그램 최초 실행
+// 프로그램 시작점.
 //  DB : sqflite
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
+  // Application 실행.
   runApp(const MyApp());
 }
 
+// Flutter GUI 진입.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
