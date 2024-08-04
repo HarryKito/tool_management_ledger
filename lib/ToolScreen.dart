@@ -101,7 +101,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('삭제 확인'),
-          content: Text('\'$name\'을(를) 삭제하시겠습니까?'),
+          content: Text('\'$name\'항목을 정말 삭제하시겠습니까?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

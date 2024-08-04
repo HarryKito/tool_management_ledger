@@ -3,6 +3,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:onetop_tool_management/DB/models.dart';
 
+// DB에 관한 클래스.
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
@@ -11,7 +12,9 @@ class DatabaseHelper {
   final _toolStreamController = StreamController<void>.broadcast();
 
   DatabaseHelper._internal();
+  static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
 
+  DatabaseHelper._privateConstructor();
   Stream<void> get toolStream => _toolStreamController.stream;
 
   Future<Database> get database async {
@@ -128,12 +131,14 @@ class DatabaseHelper {
   Future<void> deleteTool(int toolId) async {
     final db = await database;
     await db.transaction((txn) async {
+      // 모든 관련 사용 기록 삭제
       await txn.delete(
         'uses',
-        where: 'id = ?',
+        where: 'toolId = ?',
         whereArgs: [toolId],
       );
 
+      // 도구 삭제
       await txn.delete(
         'tools',
         where: 'id = ?',
@@ -231,5 +236,20 @@ class DatabaseHelper {
     }
 
     return siteNames;
+  }
+
+  // 어떠한 현장명에 사용된 도구 목록
+  Future<List<Map<String, dynamic>>> getToolUsageBySiteName(
+      String siteName) async {
+    final db = await this.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT t.id, t.name, SUM(u.amount) AS used_amount
+      FROM tools t
+      JOIN uses u ON t.id = u.toolId
+      WHERE u.site_name = ?
+      GROUP BY t.id, t.name
+    ''', [siteName]);
+
+    return maps;
   }
 }

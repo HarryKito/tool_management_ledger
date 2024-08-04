@@ -72,10 +72,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
 
   void _recordUsage() async {
     final int amount = int.tryParse(amountController.text) ?? 0;
-    // final String siteName = selectedSiteName?.isEmpty == true ? selectedSiteName! : siteNameController.text;
-    // final String siteName = siteNameController.text.isNotEmpty
-    //     ? siteNameController.text
-    //     : selectedSiteName ?? 'NULL';
     final String siteName = siteNameController.text;
     final String siteMan = siteManController.text;
 
@@ -195,9 +191,9 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             //   style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
             // ),
             SizedBox(height: 20),
+            // 수량 입력란
             Row(
               children: [
-                // 수량 입력란
                 Expanded(
                   child: TextField(
                     controller: amountController,
@@ -220,6 +216,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                       }
                       return siteNames.where((String option) {
                         return option
+                            .toLowerCase()
                             .contains(textEditingValue.text.toLowerCase());
                       });
                     },
@@ -233,44 +230,16 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                         TextEditingController fieldTextEditingController,
                         FocusNode fieldFocusNode,
                         VoidCallback onFieldSubmitted) {
+                      fieldTextEditingController.addListener(() {
+                        siteNameController.text =
+                            fieldTextEditingController.text;
+                      });
+
                       return TextField(
-                        controller: siteNameController,
+                        controller: fieldTextEditingController,
                         focusNode: fieldFocusNode,
                         decoration: InputDecoration(
                           labelText: '현장명',
-                        ),
-                        onChanged: (String value) {
-                          setState(() {
-                            selectedSiteName = null;
-                          });
-                        },
-                      );
-                    },
-                    optionsViewBuilder: (BuildContext context,
-                        AutocompleteOnSelected<String> onSelected,
-                        Iterable<String> options) {
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4.0,
-                          child: Container(
-                            width: MediaQuery.of(context).size.width / 3,
-                            child: ListView.builder(
-                              padding: EdgeInsets.all(8.0),
-                              itemCount: options.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final String option = options.elementAt(index);
-                                return GestureDetector(
-                                  onTap: () {
-                                    onSelected(option);
-                                  },
-                                  child: ListTile(
-                                    title: Text(option),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
                         ),
                       );
                     },
@@ -288,6 +257,9 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     ),
                   ),
                 ),
+                // 여기까지 현장 담당자
+
+                // 불출일
                 SizedBox(width: 10),
                 Expanded(
                   child: GestureDetector(
@@ -309,7 +281,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     ),
                   ),
                 ),
-                // 여기까지 현장 담당자
+                // 여기까지 불출일
 
                 SizedBox(width: 10),
                 ElevatedButton(
@@ -327,20 +299,19 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             Expanded(
               child: ListView.builder(
                 itemCount: toolUses.length,
-                itemBuilder: (context, index) {
-                  final use = toolUses[index];
+                itemBuilder: (BuildContext context, int index) {
+                  Uses use = toolUses[index];
                   return ListTile(
                     title: Text(
-                      '현장명: ${use.siteName} (담당자: ${use.siteMan})',
+                      '${use.startDate.toLocal().toString().split(' ')[0]} - ${use.siteName}',
                     ),
                     subtitle: Text(
-                      '불출일: ${use.startDate.toLocal().toString().split(' ')[0]}, 사용량: ${use.amount}',
+                      '수량: ${use.amount}, 담당자: ${use.siteMan}',
                     ),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),
-                      onPressed: () {
-                        _showDeleteConfirmationDialog(context, use);
-                      },
+                      onPressed: () =>
+                          _showDeleteConfirmationDialog(context, use),
                     ),
                   );
                 },
