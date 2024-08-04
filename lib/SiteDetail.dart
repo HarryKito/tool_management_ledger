@@ -10,6 +10,7 @@ class SiteDetailScreen extends StatefulWidget {
   _SiteDetailScreenState createState() => _SiteDetailScreenState();
 }
 
+// 도구 사용목록 상세 페이지
 class _SiteDetailScreenState extends State<SiteDetailScreen> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> toolsUsedAtSite = [];
