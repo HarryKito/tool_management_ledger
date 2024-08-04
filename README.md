@@ -11,7 +11,7 @@ Tool management project for Onetop.
             색 변경 (직관성)
     
 FIXME:
-> bug : 도구 상세 목록 --> 잔여수량 (실제 데이터 미반영)
+> bug : 도구 _ 불출량 > 전체 수량 _ 현상 발생.
 
 TODO:
 > main, 첫 화면(도구 목록)에 현장명 리스트도 만들기.
