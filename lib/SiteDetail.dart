@@ -9,7 +9,7 @@ class SiteDetailScreen extends StatefulWidget {
   @override
   _SiteDetailScreenState createState() => _SiteDetailScreenState();
 }
-
+f
 // 도구 사용목록 상세 페이지
 class _SiteDetailScreenState extends State<SiteDetailScreen> {
   final DatabaseHelper dbHelper = DatabaseHelper();
@@ -20,6 +20,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     super.initState();
   }
 
+// 도구 사용목록 상세 페이지 by 현장명 GUI init
   @override
   Widget build(BuildContext context) {
     return Scaffold(
