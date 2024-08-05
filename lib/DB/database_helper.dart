@@ -253,13 +253,18 @@ class DatabaseHelper {
     return maps;
   }
 
-  Future<String?> getSiteManBySiteName(String siteName) async {
+  Future<String?> getSiteManagerByName(String siteName) async {
     final db = await database;
-    var res =
-        await db.query("site_name", where: "name = ?", whereArgs: [siteName]);
-    if (res.isNotEmpty) {
-      print(res.first["siteMan"] as String?);
-      return res.first["siteMan"] as String?;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'uses',
+      columns: ['siteMan'],
+      where: 'site_name = ?',
+      whereArgs: [siteName],
+      limit: 1, // 하나의 결과만 필요
+    );
+
+    if (maps.isNotEmpty) {
+      return maps.first['siteMan'] as String?;
     }
     return null;
   }

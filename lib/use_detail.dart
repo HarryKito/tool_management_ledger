@@ -108,7 +108,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
       });
     } else {
       print('Invalid input data'); // 디버깅 출력
-      print(" site name : ${siteName}");
+      print("site name : ${siteName}");
     }
   }
 
@@ -185,13 +185,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
               '선택 도구명 : $toolName',
               style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
             ),
-            // FIXME: BUG FIX. (issue on README)
-            // Text(
-            //   '잔여 수량 : $toolQuantity',
-            //   style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-            // ),
             SizedBox(height: 20),
-            // 수량 입력란
             Row(
               children: [
                 Expanded(
@@ -205,9 +199,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                   ),
                 ),
                 SizedBox(width: 10),
-                // 수량 입력란 끝
-
-                // 현장명
                 Expanded(
                   child: Autocomplete<String>(
                     optionsBuilder: (TextEditingValue textEditingValue) {
@@ -226,9 +217,9 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                         siteNameController.text = selection;
                       });
 
-                      // siteMan 값을 비동기적으로 가져와서 siteManController에 설정
+                      // DB로부터 현장 담당자 수집
                       String? siteMan =
-                          await dbHelper.getSiteManBySiteName(selection);
+                          await dbHelper.getSiteManagerByName(selection);
                       if (siteMan != null) {
                         setState(() {
                           siteManController.text = siteMan;
@@ -254,9 +245,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     },
                   ),
                 ),
-                // 여기까지 현장명
-
-                // 현장 담당자
                 SizedBox(width: 10),
                 Expanded(
                   child: TextField(
@@ -266,9 +254,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     ),
                   ),
                 ),
-                // 여기까지 현장 담당자
-
-                // 불출일
                 SizedBox(width: 10),
                 Expanded(
                   child: GestureDetector(
@@ -290,8 +275,6 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     ),
                   ),
                 ),
-                // 여기까지 불출일
-
                 SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: _recordUsage,
@@ -317,10 +300,13 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                     subtitle: Text(
                       '수량: ${use.amount}, 담당자: ${use.siteMan}',
                     ),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () =>
-                          _showDeleteConfirmationDialog(context, use),
+                    trailing: Tooltip(
+                      message: '반납처리',
+                      child: IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () =>
+                            _showDeleteConfirmationDialog(context, use),
+                      ),
                     ),
                   );
                 },
