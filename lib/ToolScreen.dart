@@ -179,7 +179,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('도구 관리 대장'),
+        title: Text('공도구 관리 대장'),
       ),
       body: Row(
         children: [
@@ -192,7 +192,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   child: TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      labelText: '품명 검색',
+                      labelText: '공도구 검색',
                       prefixIcon: Icon(Icons.search),
                     ),
                   ),
@@ -254,7 +254,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       Expanded(
                         child: TextField(
                           controller: nameController,
-                          decoration: InputDecoration(labelText: '품명'),
+                          decoration: InputDecoration(labelText: '공도구명'),
                           onSubmitted: (value) => _addTool(),
                         ),
                       ),

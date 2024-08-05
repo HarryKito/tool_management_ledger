@@ -252,4 +252,15 @@ class DatabaseHelper {
 
     return maps;
   }
+
+  Future<String?> getSiteManBySiteName(String siteName) async {
+    final db = await database;
+    var res =
+        await db.query("site_name", where: "name = ?", whereArgs: [siteName]);
+    if (res.isNotEmpty) {
+      print(res.first["siteMan"] as String?);
+      return res.first["siteMan"] as String?;
+    }
+    return null;
+  }
 }

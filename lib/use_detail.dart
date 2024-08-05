@@ -144,9 +144,9 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
         return AlertDialog(
           title: Text('삭제 확인'),
           content: Text(
-            '사용 내역을 삭제하시겠습니까?\n'
+            '반출 내역을 삭제하시겠습니까?\n'
             '불출일: ${use.startDate.toLocal().toString().split(' ')[0]} \n'
-            '사용량: ${use.amount}\n'
+            '반출량: ${use.amount}\n'
             '현장명: ${use.siteName}\n'
             '현장 담당자: ${use.siteMan}',
           ),
@@ -174,7 +174,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('도구 사용 기록'),
+        title: Text('공도구 반출 기록'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -182,7 +182,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '선택 제품명 : $toolName',
+              '선택 도구명 : $toolName',
               style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
             ),
             // FIXME: BUG FIX. (issue on README)
@@ -220,11 +220,20 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                             .contains(textEditingValue.text.toLowerCase());
                       });
                     },
-                    onSelected: (String selection) {
+                    onSelected: (String selection) async {
                       setState(() {
                         selectedSiteName = selection;
                         siteNameController.text = selection;
                       });
+
+                      // siteMan 값을 비동기적으로 가져와서 siteManController에 설정
+                      String? siteMan =
+                          await dbHelper.getSiteManBySiteName(selection);
+                      if (siteMan != null) {
+                        setState(() {
+                          siteManController.text = siteMan;
+                        });
+                      }
                     },
                     fieldViewBuilder: (BuildContext context,
                         TextEditingController fieldTextEditingController,
@@ -292,7 +301,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             ),
             SizedBox(height: 20),
             Text(
-              '도구 사용 내역',
+              '공도구 반출 내역',
               style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),

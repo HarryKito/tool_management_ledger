@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // 도구 관리함
     return MaterialApp(
-      title: '도구관리함',
+      title: '공도구관리함',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
