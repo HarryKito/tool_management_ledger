@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onetop_tool_management/DB/database_helper.dart';
-import 'package:onetop_tool_management/DB/models.dart';
 
 class SiteDetailScreen extends StatefulWidget {
-  // 현장명 내용 입수
   final String siteName;
   SiteDetailScreen({required this.siteName});
 
@@ -11,7 +9,6 @@ class SiteDetailScreen extends StatefulWidget {
   _SiteDetailScreenState createState() => _SiteDetailScreenState();
 }
 
-// 도구 사용목록 상세 페이지
 class _SiteDetailScreenState extends State<SiteDetailScreen> {
   final DatabaseHelper dbHelper = DatabaseHelper.instance;
   List<Map<String, dynamic>> toolsAtSite = [];
@@ -30,7 +27,19 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     });
   }
 
-// 도구 사용목록 상세 페이지 by 현장명 GUI init
+  Future<void> _deleteUsage(int id) async {
+    await dbHelper.deleteUse(id);
+    await _loadToolsAtSite(); // Reload the list after deletion
+  }
+
+  String formatDate(String? date) {
+    if (date == null) {
+      return 'N/A';
+    }
+    final DateTime dateTime = DateTime.parse(date);
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,11 +49,48 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       body: ListView.builder(
         itemCount: toolsAtSite.length,
         itemBuilder: (context, index) {
-          final tool = toolsAtSite[index];
+          final toolUsage = toolsAtSite[index];
+
+          final toolName = toolUsage['name'] as String;
+          final usedAmount = toolUsage['used_amount'] as int;
+          final startDate = toolUsage['start_date'] as String?;
+          final usageId = toolUsage['id'] as int;
+
           return ListTile(
-            title: Text(tool['name']),
-            subtitle: Text('불출량: ${tool['used_amount']}'),
-          );
+              title: Text(toolName),
+              subtitle: Text('불출량: $usedAmount\n불출일: ${formatDate(startDate)}'),
+              trailing: Tooltip(
+                message: "반납처리",
+                child: IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('반납 확인'),
+                          content: Text('이 항목을 반납하시겠습니까?'),
+                          actions: <Widget>[
+                            TextButton(
+                              child: Text('취소'),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                            TextButton(
+                              child: Text('반납'),
+                              onPressed: () async {
+                                await _deleteUsage(usageId);
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+              ));
         },
       ),
     );

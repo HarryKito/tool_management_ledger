@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:onetop_tool_management/DB/database_helper.dart';
 import 'package:onetop_tool_management/DB/models.dart';
 import 'package:onetop_tool_management/use_detail.dart';
-import 'package:onetop_tool_management/SiteDetail.dart'; // 새로운 화면 import
+import 'package:onetop_tool_management/SiteDetail.dart';
 
 class ToolsScreen extends StatefulWidget {
   @override
   _ToolsScreenState createState() => _ToolsScreenState();
 }
 
-class _ToolsScreenState extends State<ToolsScreen> {
+class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Tools> toolsList = [];
   List<Tools> filteredToolsList = [];
@@ -22,9 +23,24 @@ class _ToolsScreenState extends State<ToolsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadToolsList();
     searchController.addListener(_filterToolsList);
     _loadSiteNames();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadToolsList();
+      _loadSiteNames();
+    }
   }
 
   Future<void> _loadToolsList() async {
@@ -311,7 +327,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                               builder: (context) =>
                                   SiteDetailScreen(siteName: siteNames[index]),
                             ),
-                          );
+                          ).then((_) async {
+                            await _loadToolsList(); // 현장 세부 화면에서 돌아왔을 때 목록 다시 불러오기
+                            await _loadSiteNames(); // Load site names after returning from site detail screen
+                          });
                         },
                       );
                     },

@@ -243,12 +243,11 @@ class DatabaseHelper {
       String siteName) async {
     final db = await this.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT t.id, t.name, SUM(u.amount) AS used_amount
-      FROM tools t
-      JOIN uses u ON t.id = u.toolId
-      WHERE u.site_name = ?
-      GROUP BY t.id, t.name
-    ''', [siteName]);
+    SELECT u.id, t.name, u.start_date, u.amount AS used_amount
+    FROM tools t
+    JOIN uses u ON t.id = u.toolId
+    WHERE u.site_name = ?
+  ''', [siteName]);
 
     return maps;
   }

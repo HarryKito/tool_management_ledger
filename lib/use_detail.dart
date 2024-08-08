@@ -142,7 +142,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('삭제 확인'),
+          title: Text('반납 확인'),
           content: Text(
             '반출 내역을 삭제하시겠습니까?\n'
             '불출일: ${use.startDate.toLocal().toString().split(' ')[0]} \n'
@@ -158,7 +158,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
               },
             ),
             TextButton(
-              child: Text('삭제'),
+              child: Text('반납처리'),
               onPressed: () {
                 _deleteUse(use.id!);
                 Navigator.of(context).pop();
