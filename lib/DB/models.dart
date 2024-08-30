@@ -35,13 +35,12 @@ class Tools {
 
   // 잔량
   String getStockStatus() {
-    if (remainingQuantity == 0) {
+    if (remainingQuantity == 0)
       return 'empty';
-    } else if (remainingQuantity < quantity * 0.2) {
+    else if (remainingQuantity < quantity * 0.2)
       return 'low';
-    } else {
+    else
       return 'normal';
-    }
   }
 }
 
@@ -53,6 +52,9 @@ class Tools {
 // 종료일
 // 사용량
 // 사용처
+// 담당자
+// 불출자
+// 반납여부
 class Uses {
   final int? id;
   final int toolId;
@@ -61,6 +63,8 @@ class Uses {
   final int amount;
   final String siteName;
   final String siteMan;
+  final String borrower;
+  int isBorrow;
 
   Uses({
     this.id,
@@ -70,6 +74,8 @@ class Uses {
     required this.amount,
     required this.siteName,
     required this.siteMan,
+    required this.borrower,
+    this.isBorrow = 1,
   });
 
   Map<String, dynamic> toMap() {
@@ -81,6 +87,8 @@ class Uses {
       'amount': amount,
       'site_name': siteName,
       'siteMan': siteMan,
+      'borrower': borrower,
+      'isBorrow': isBorrow,
     };
   }
 
@@ -93,6 +101,8 @@ class Uses {
       amount: map['amount'],
       siteName: map['site_name'],
       siteMan: map['siteMan'],
+      borrower: map['borrower'],
+      isBorrow: map['isBorrow'],
     );
   }
 }

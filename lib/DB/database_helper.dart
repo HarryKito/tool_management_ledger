@@ -24,31 +24,6 @@ class DatabaseHelper {
     return _database!;
   }
 
-  Future<void> updateToolQuantity(int toolId, int quantityChange) async {
-    final db = await database;
-    await db.transaction((txn) async {
-      // 현재 잔여 수량을 조회
-      List<Map<String, dynamic>> toolList = await txn.query(
-        'tools',
-        where: 'id = ?',
-        whereArgs: [toolId],
-      );
-
-      if (toolList.isNotEmpty) {
-        int currentQuantity = toolList.first['quantity'];
-        int newQuantity = currentQuantity + quantityChange;
-
-        // 잔여 수량 업데이트
-        await txn.update(
-          'tools',
-          {'quantity': newQuantity},
-          where: 'id = ?',
-          whereArgs: [toolId],
-        );
-      }
-    });
-  }
-
   Future<Uses?> getUseById(int id) async {
     final db = await database;
     List<Map<String, dynamic>> maps = await db.query(
@@ -79,7 +54,9 @@ class DatabaseHelper {
       end_date TEXT,
       amount INTEGER NOT NULL,
       site_name TEXT NOT NULL,
-      siteMan TEXT NOT NULL
+      siteMan TEXT NOT NULL,
+      borrower TEXT NOT NULL,
+      isBorrow INTEGER NOT NULL
     )
   ''');
   }
@@ -87,8 +64,8 @@ class DatabaseHelper {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < newVersion) {
       await db.execute('''
-        ALTER TABLE uses ADD COLUMN siteMan TEXT NOT NULL DEFAULT ''
-      ''');
+      ALTER TABLE uses ADD COLUMN borrower TEXT NOT NULL DEFAULT ''
+    ''');
     }
   }
 
@@ -147,20 +124,36 @@ class DatabaseHelper {
     });
   }
 
+  Future<void> markAsReturned(int useId) async {
+    final db = await database;
+
+    await db.update(
+      'uses',
+      {'isBorrow': 0},
+      where: 'id = ?',
+      whereArgs: [useId],
+    );
+
+    _toolStreamController.add(null);
+  }
+
   Future<int> insertUse(Uses use) async {
     Database db = await database;
     String? endDate =
         use.endDate != null ? use.endDate!.toIso8601String() : null;
+    use.isBorrow = 1;
 
     return await db.rawInsert(
-        'INSERT OR REPLACE INTO uses (toolId, start_date, end_date, amount, site_name, siteMan) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT OR REPLACE INTO uses (toolId, start_date, end_date, amount, site_name, siteMan, borrower, isBorrow) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         [
           use.toolId,
           use.startDate.toIso8601String(),
           endDate,
           use.amount,
           use.siteName,
-          use.siteMan
+          use.siteMan,
+          use.borrower,
+          use.isBorrow
         ]);
   }
 
@@ -173,7 +166,6 @@ class DatabaseHelper {
 // 사용 내역 업데이트하기 (수정)
 // FIXME:
 //   사용내역 수정버튼이랑 연결.
-
   Future<void> updateUse(Uses use) async {
     final db = await database;
     await db.update(
@@ -207,12 +199,30 @@ class DatabaseHelper {
     }
   }
 
-  Future<int> getTotalUsageByToolId(int toolId) async {
+  Future<int> getTotalUsageByToolId(int toolId,
+      {bool onlyBorrowed = false}) async {
     final db = await database;
+    String whereClause = 'toolId = ?';
+    List<dynamic> whereArgs = [toolId];
+
+    if (onlyBorrowed) {
+      whereClause += ' AND isBorrow = 1'; // 반납되지 않은 내역만 선택
+    }
+
     final result = await db.rawQuery(
-        'SELECT SUM(amount) as total FROM uses WHERE toolId = ?', [toolId]);
+      'SELECT SUM(amount) as total FROM uses WHERE $whereClause',
+      whereArgs,
+    );
+
     return result.first['total'] != null ? result.first['total'] as int : 0;
   }
+
+  // Future<int> getTotalUsageByToolId(int toolId) async {
+  //   final db = await database;
+  //   final result = await db.rawQuery(
+  //       'SELECT SUM(amount) as total FROM uses WHERE toolId = ?', [toolId]);
+  //   return result.first['total'] != null ? result.first['total'] as int : 0;
+  // }
 
   // 모든 현장명 수집
   // 현장명 목록 불러올 떄 사용

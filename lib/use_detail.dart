@@ -16,6 +16,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController siteNameController = TextEditingController();
   final TextEditingController siteManController = TextEditingController();
+  final TextEditingController borrowerController = TextEditingController();
   final DatabaseHelper dbHelper = DatabaseHelper();
   DateTime? selectedDate;
   List<Uses> toolUses = [];
@@ -74,6 +75,8 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
     final int amount = int.tryParse(amountController.text) ?? 0;
     final String siteName = siteNameController.text;
     final String siteMan = siteManController.text;
+    final String borrower = borrowerController.text;
+    final int isBorrow = 0;
 
     if (selectedDate != null &&
         amount > 0 &&
@@ -90,10 +93,12 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
         amount: amount,
         siteName: siteName,
         siteMan: siteMan,
+        borrower: borrower,
+        isBorrow: isBorrow,
       );
       await dbHelper.insertUse(use);
 
-      // 사용량을 툴의 총량에서 차감
+      // 사용량을 총량에서 차감
       setState(() {
         toolQuantity -= amount;
       });
@@ -102,6 +107,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
       amountController.clear();
       siteNameController.clear();
       siteManController.clear();
+      borrowerController.clear();
       selectedDate = null;
       setState(() {
         selectedSiteName = null;
@@ -115,6 +121,14 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   void _deleteUse(int useId) async {
     await dbHelper.deleteUse(useId);
     _fetchToolUses();
+  }
+
+  void _markAsReturned(int index) async {
+    setState(() {
+      toolUses[index].isBorrow = 0;
+    });
+
+    await dbHelper.updateUse(toolUses[index]);
   }
 
   void _showWarningDialog(BuildContext context, String message) {
@@ -148,7 +162,8 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             '불출일: ${use.startDate.toLocal().toString().split(' ')[0]} \n'
             '반출량: ${use.amount}\n'
             '현장명: ${use.siteName}\n'
-            '현장 담당자: ${use.siteMan}',
+            '현장 담당자: ${use.siteMan}\n'
+            '반출자: ${use.borrower}',
           ),
           actions: <Widget>[
             TextButton(
@@ -256,6 +271,15 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                 ),
                 SizedBox(width: 10),
                 Expanded(
+                  child: TextField(
+                    controller: borrowerController, // 추가된 필드
+                    decoration: InputDecoration(
+                      labelText: '반출자',
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
                   child: GestureDetector(
                     onTap: () => _selectDate(context),
                     child: AbsorbPointer(
@@ -290,27 +314,46 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
             SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
-                itemCount: toolUses.length,
-                itemBuilder: (BuildContext context, int index) {
-                  Uses use = toolUses[index];
-                  return ListTile(
-                    title: Text(
-                      '${use.startDate.toLocal().toString().split(' ')[0]} - ${use.siteName}',
-                    ),
-                    subtitle: Text(
-                      '수량: ${use.amount}, 담당자: ${use.siteMan}',
-                    ),
-                    trailing: Tooltip(
-                      message: '반납처리',
-                      child: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () =>
-                            _showDeleteConfirmationDialog(context, use),
+                  itemCount: toolUses.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    Uses use = toolUses[index];
+                    return ListTile(
+                      title: Text(
+                        '${use.startDate.toLocal().toString().split(' ')[0]} - ${use.siteName}',
+                        style: TextStyle(
+                          decoration: use.isBorrow == 0
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                      subtitle:
+                          Text('현장 담당자: ${use.siteMan} / 반출자: ${use.borrower}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: use.isBorrow == 0
+                                ? null
+                                : () {
+                                    _markAsReturned(index); // 각 항목의 index를 전달
+                                  },
+                            child: Text(
+                              '반납',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Tooltip(
+                            message: '행 삭제',
+                            child: IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () =>
+                                  _showDeleteConfirmationDialog(context, use),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
             ),
           ],
         ),

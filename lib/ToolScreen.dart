@@ -46,7 +46,8 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
   Future<void> _loadToolsList() async {
     List<Tools> tools = await dbHelper.getTools();
     for (var tool in tools) {
-      int totalUsage = await dbHelper.getTotalUsageByToolId(tool.id!);
+      int totalUsage =
+          await dbHelper.getTotalUsageByToolId(tool.id!, onlyBorrowed: true);
       tool.remainingQuantity = tool.quantity - totalUsage;
     }
     tools.sort((a, b) => a.name.compareTo(b.name));
