@@ -59,38 +59,51 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
           return ListTile(
               title: Text(toolName),
               subtitle: Text('불출량: $usedAmount\n불출일: ${formatDate(startDate)}'),
-              trailing: Tooltip(
-                message: "반납처리",
-                child: IconButton(
-                  icon: Icon(Icons.delete),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                TextButton(
                   onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text('반납 확인'),
-                          content: Text('이 항목을 반납하시겠습니까?'),
-                          actions: <Widget>[
-                            TextButton(
-                              child: Text('취소'),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                            TextButton(
-                              child: Text('반납'),
-                              onPressed: () async {
-                                await _deleteUsage(usageId);
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
+                    // FIXME: 반납처리, 반납처리 후 취소선.
+                    // TODO: use_detail과 마잔가지로 반납기능 구현
+                    print('반납처리 기능구현');
                   },
+                  child: Text(
+                    '반납',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ));
+                Tooltip(
+                  message: "행 삭제",
+                  child: IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('삭제 확인'),
+                            content: Text('이 항목을 삭제하시겠습니까?'),
+                            actions: <Widget>[
+                              TextButton(
+                                child: Text('취소'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                              TextButton(
+                                child: Text('삭제'),
+                                onPressed: () async {
+                                  await _deleteUsage(usageId);
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                )
+              ]));
         },
       ),
     );
