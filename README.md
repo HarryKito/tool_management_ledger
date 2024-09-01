@@ -2,6 +2,8 @@
 
 Tool management project for Onetop.
 
+# build for windows release
+
 # Todo
     모든 수정 버튼마다 확인 (Alert Dialog 추가)
     직관적이게 도구사용기록 수정버튼(Text+) 추가
