@@ -104,7 +104,7 @@ class DatabaseHelper {
     });
   }
 
-// 도구목록 삭제하기.
+// 도구 삭제
   Future<void> deleteTool(int toolId) async {
     final db = await database;
     await db.transaction((txn) async {
@@ -115,7 +115,6 @@ class DatabaseHelper {
         whereArgs: [toolId],
       );
 
-      // 도구 삭제
       await txn.delete(
         'tools',
         where: 'id = ?',
@@ -135,6 +134,20 @@ class DatabaseHelper {
     );
 
     _toolStreamController.add(null);
+  }
+
+// 반납 처리 후 날짜 기록
+  Future<void> markAsReturnedWithDate(int id) async {
+    final db = await this.database;
+    await db.update(
+      'uses',
+      {
+        'isBorrow': 0,
+        'end_date': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<int> insertUse(Uses use) async {
@@ -237,10 +250,9 @@ class DatabaseHelper {
             .map((row) =>
                 row['site_name'] != null ? row['site_name'] as String : '')
             .toList();
-        // null이 아닌 경우에만 String으로
-        siteNames.removeWhere((name) => name.isEmpty); // 빈 문자열 제거
+        siteNames.removeWhere((name) => name.isEmpty);
       }
-      print('Fetched site names: $siteNames'); // 결과 출력
+      // print('Fetched site names: $siteNames'); // 결과 출력
     } catch (e) {
       print('Error fetching site names: $e');
     }
@@ -253,7 +265,7 @@ class DatabaseHelper {
       String siteName) async {
     final db = await this.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
-    SELECT u.id, t.name, u.start_date, u.amount AS used_amount
+    SELECT u.id, t.name, u.start_date, u.end_date, u.amount AS used_amount, u.isBorrow
     FROM tools t
     JOIN uses u ON t.id = u.toolId
     WHERE u.site_name = ?
@@ -269,7 +281,7 @@ class DatabaseHelper {
       columns: ['siteMan'],
       where: 'site_name = ?',
       whereArgs: [siteName],
-      limit: 1, // 하나의 결과만 필요
+      limit: 1, // 하나의 결과만
     );
 
     if (maps.isNotEmpty) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
+// import 'package:flutter/widgets.dart';
 import 'package:onetop_tool_management/DB/database_helper.dart';
 import 'package:onetop_tool_management/DB/models.dart';
 import 'package:onetop_tool_management/use_detail.dart';
@@ -89,7 +89,7 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
         nameController.clear();
         quantityController.clear();
         await _loadToolsList();
-        await _loadSiteNames(); // Load site names after adding a tool
+        await _loadSiteNames();
       }
     }
   }
@@ -140,7 +140,7 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
   void _deleteTool(int id) async {
     await dbHelper.deleteTool(id);
     await _loadToolsList();
-    await _loadSiteNames(); // Load site names after deleting a tool
+    await _loadSiteNames();
   }
 
   void _editTool(Tools tool) {
@@ -179,8 +179,8 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
                   tool.name = nameController.text;
                   tool.quantity = int.parse(quantityController.text);
                   await dbHelper.updateTool(tool);
-                  await _loadToolsList(); // 도구 수정 후 목록 다시 불러오기
-                  await _loadSiteNames(); // Load site names after editing a tool
+                  await _loadToolsList();
+                  await _loadSiteNames();
                   Navigator.of(context).pop();
                 }
               },
@@ -196,7 +196,7 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('공도구 관리 대장'),
+        title: Text('공구, 자재 입출고 관리대장'),
       ),
       body: Row(
         children: [
@@ -209,7 +209,7 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
                   child: TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      labelText: '공도구 검색',
+                      labelText: '공구/자재 검색',
                       prefixIcon: Icon(Icons.search),
                     ),
                   ),
@@ -255,15 +255,14 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
                                   UseDetailScreen(toolId: tool.id!),
                             ),
                           ).then((_) async {
-                            await _loadToolsList(); // 도구 사용 기록 수정 후 돌아왔을 때 목록 다시 불러오기
-                            await _loadSiteNames(); // Load site names after returning from use details screen
+                            await _loadToolsList();
+                            await _loadSiteNames();
                           });
                         },
                       );
                     },
                   ),
                 ),
-                // 도구 추가 입력란
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -329,8 +328,8 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
                                   SiteDetailScreen(siteName: siteNames[index]),
                             ),
                           ).then((_) async {
-                            await _loadToolsList(); // 현장 세부 화면에서 돌아왔을 때 목록 다시 불러오기
-                            await _loadSiteNames(); // Load site names after returning from site detail screen
+                            await _loadToolsList();
+                            await _loadSiteNames();
                           });
                         },
                       );

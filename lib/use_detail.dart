@@ -89,7 +89,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
       Uses use = Uses(
         toolId: widget.toolId,
         startDate: selectedDate!,
-        endDate: null, // 종료일 없음
+        endDate: null, // 종료일 일단은 없음
         amount: amount,
         siteName: siteName,
         siteMan: siteMan,
@@ -124,11 +124,12 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   }
 
   void _markAsReturned(int index) async {
+    Uses use = toolUses[index];
+    await dbHelper.markAsReturnedWithDate(use.id!);
     setState(() {
-      toolUses[index].isBorrow = 0;
+      _fetchToolUses();
     });
-
-    await dbHelper.updateUse(toolUses[index]);
+    // await dbHelper.updateUse(toolUses[index]);
   }
 
   void _showWarningDialog(BuildContext context, String message) {
@@ -156,10 +157,10 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('반납 확인'),
+          title: Text('삭제 확인'),
           content: Text(
-            '반출 내역을 삭제하시겠습니까?\n'
-            '불출일: ${use.startDate.toLocal().toString().split(' ')[0]} \n'
+            '해당 기록을 삭제하시겠습니까?\n\n'
+            '불출일: ${use.startDate.toLocal().toString().split(' ')[0]}\n'
             '반출량: ${use.amount}\n'
             '현장명: ${use.siteName}\n'
             '현장 담당자: ${use.siteMan}\n'
@@ -173,7 +174,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
               },
             ),
             TextButton(
-              child: Text('반납처리'),
+              child: Text('삭제'),
               onPressed: () {
                 _deleteUse(use.id!);
                 Navigator.of(context).pop();
@@ -189,7 +190,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('공도구 반출 기록'),
+        title: Text('공구, 자재 입출고 기록'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -272,7 +273,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                 SizedBox(width: 10),
                 Expanded(
                   child: TextField(
-                    controller: borrowerController, // 추가된 필드
+                    controller: borrowerController,
                     decoration: InputDecoration(
                       labelText: '반출자',
                     ),
@@ -326,8 +327,29 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                               : null,
                         ),
                       ),
-                      subtitle:
-                          Text('현장 담당자: ${use.siteMan} / 반출자: ${use.borrower}'),
+                      subtitle: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '현장 담당자: ${use.siteMan} / 반출자: ${use.borrower}',
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.center,
+                            child: Text(
+                              use.endDate != null
+                                  ? '반납일: ${use.endDate!.toLocal().toString().split(' ')[0]}\n'
+                                  : '사용중...\n',
+                              style: TextStyle(
+                                color: use.isBorrow == 0
+                                    ? Colors.grey
+                                    : Colors.black,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -335,7 +357,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                             onPressed: use.isBorrow == 0
                                 ? null
                                 : () {
-                                    _markAsReturned(index); // 각 항목의 index를 전달
+                                    _markAsReturned(index);
                                   },
                             child: Text(
                               '반납',
@@ -343,7 +365,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                             ),
                           ),
                           Tooltip(
-                            message: '행 삭제',
+                            message: '기록 삭제',
                             child: IconButton(
                               icon: Icon(Icons.delete),
                               onPressed: () =>

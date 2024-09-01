@@ -27,9 +27,41 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     });
   }
 
+  Future<void> _returnUsage(int id) async {
+    await dbHelper.markAsReturnedWithDate(id);
+    await _loadToolsAtSite();
+  }
+
   Future<void> _deleteUsage(int id) async {
     await dbHelper.deleteUse(id);
-    await _loadToolsAtSite(); // Reload the list after deletion
+    await _loadToolsAtSite();
+  }
+
+  void _confirmDeleteUsage(int usageId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('삭제 확인'),
+          content: Text('이 사용 내역을 삭제하시겠습니까?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('취소'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('삭제'),
+              onPressed: () async {
+                await _deleteUsage(usageId);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String formatDate(String? date) {
@@ -55,55 +87,63 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
           final usedAmount = toolUsage['used_amount'] as int;
           final startDate = toolUsage['start_date'] as String?;
           final usageId = toolUsage['id'] as int;
+          final isBorrow = toolUsage['isBorrow'] == 1;
+          final returnDate = toolUsage['end_date'] as String?;
 
           return ListTile(
-              title: Text(toolName),
-              subtitle: Text('불출량: $usedAmount\n불출일: ${formatDate(startDate)}'),
-              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                TextButton(
-                  onPressed: () {
-                    // FIXME: 반납처리, 반납처리 후 취소선.
-                    // TODO: use_detail과 마잔가지로 반납기능 구현
-                    print('반납처리 기능구현');
-                  },
-                  child: Text(
-                    '반납',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Tooltip(
-                  message: "행 삭제",
-                  child: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text('삭제 확인'),
-                            content: Text('이 항목을 삭제하시겠습니까?'),
-                            actions: <Widget>[
-                              TextButton(
-                                child: Text('취소'),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                              TextButton(
-                                child: Text('삭제'),
-                                onPressed: () async {
-                                  await _deleteUsage(usageId);
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      );
+            title: Text(
+              toolName,
+              style: TextStyle(
+                decoration:
+                    isBorrow ? TextDecoration.none : TextDecoration.lineThrough,
+                color: isBorrow ? Colors.black : Colors.grey,
+              ),
+            ),
+            subtitle: Text(
+              '불출량: $usedAmount\n불출일: ${formatDate(startDate)}',
+              style: TextStyle(
+                color: isBorrow ? Colors.black : Colors.grey,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isBorrow)
+                  TextButton(
+                    onPressed: () async {
+                      await _returnUsage(usageId);
                     },
+                    child: Text(
+                      '반납',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '반납일:',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      Text(
+                        formatDate(returnDate),
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
                   ),
-                )
-              ]));
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () {
+                    _confirmDeleteUsage(usageId);
+                  },
+                ),
+              ],
+            ),
+          );
         },
       ),
     );
