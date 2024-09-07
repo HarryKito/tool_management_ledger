@@ -368,20 +368,20 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
                   ],
                 ),
               ),
-              GestureDetector(
-                onHorizontalDragUpdate: (details) {
-                  setState(() {
-                    _rightPanelWidth -= details.delta.dx / constraints.maxWidth;
-                    if (_rightPanelWidth < 0.2) _rightPanelWidth = 0.2;
-                    if (_rightPanelWidth > 0.4) _rightPanelWidth = 0.4;
-                  });
-                },
-                child: VerticalDivider(
-                  width: 5,
-                  thickness: 1,
-                  color: Colors.black,
-                ),
-              ),
+              // GestureDetector(
+              //   onHorizontalDragUpdate: (details) {
+              //     setState(() {
+              //       _rightPanelWidth -= details.delta.dx / constraints.maxWidth;
+              //       if (_rightPanelWidth < 0.2) _rightPanelWidth = 0.2;
+              //       if (_rightPanelWidth > 0.4) _rightPanelWidth = 0.4;
+              //     });
+              //   },
+              //   child: VerticalDivider(
+              //     width: 5,
+              //     thickness: 1,
+              //     color: Colors.black,
+              //   ),
+              // ),
               Expanded(
                 child: Column(
                   children: [
