@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// import 'package:flutter/widgets.dart';
 import 'package:onetop_tool_management/DB/database_helper.dart';
 import 'package:onetop_tool_management/DB/models.dart';
 import 'package:onetop_tool_management/use_detail.dart';
 import 'package:onetop_tool_management/SiteDetail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ToolsScreen extends StatefulWidget {
   @override
@@ -19,6 +19,10 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
+  final TextEditingController noteController = TextEditingController();
+
+  double _leftPanelWidth = 0.6;
+  double _rightPanelWidth = 0.2;
 
   @override
   void initState() {
@@ -27,6 +31,7 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
     _loadToolsList();
     searchController.addListener(_filterToolsList);
     _loadSiteNames();
+    _loadNote();
   }
 
   @override
@@ -71,6 +76,17 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
           .where((tool) => tool.name.toLowerCase().contains(searchQuery))
           .toList();
     });
+  }
+
+  Future<void> _loadNote() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? savedNote = prefs.getString('note') ?? '';
+    noteController.text = savedNote;
+  }
+
+  Future<void> _saveNote() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('note', noteController.text);
   }
 
   void _addTool() async {
@@ -198,148 +214,213 @@ class _ToolsScreenState extends State<ToolsScreen> with WidgetsBindingObserver {
       appBar: AppBar(
         title: Text('공구, 자재 입출고 관리대장'),
       ),
-      body: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                      labelText: '공구/자재 검색',
-                      prefixIcon: Icon(Icons.search),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Row(
+            children: [
+              Container(
+                width: constraints.maxWidth * _leftPanelWidth,
+                child: Column(
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          labelText: '공구/자재 검색',
+                          prefixIcon: Icon(Icons.search),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: filteredToolsList.length,
-                    itemBuilder: (context, index) {
-                      Tools tool = filteredToolsList[index];
-                      return ListTile(
-                        title: Row(
-                          children: [
-                            Expanded(flex: 2, child: Text(tool.name)),
-                            Spacer(),
-                            Expanded(
-                                flex: 2, child: Text('수량: ${tool.quantity}')),
-                            Spacer(),
-                            Expanded(
-                                flex: 2,
-                                child: Text(
-                                    '불출량: ${tool.quantity - tool.remainingQuantity}')),
-                            Spacer(),
-                            Expanded(
-                                flex: 2,
-                                child: Text('잔여량: ${tool.remainingQuantity}')),
-                            Spacer(),
-                            IconButton(
-                              icon: Icon(Icons.edit),
-                              onPressed: () => _editTool(tool),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filteredToolsList.length,
+                        itemBuilder: (context, index) {
+                          Tools tool = filteredToolsList[index];
+                          return ListTile(
+                            title: Row(
+                              children: [
+                                Expanded(flex: 2, child: Text(tool.name)),
+                                Spacer(),
+                                Expanded(
+                                    flex: 2,
+                                    child: Text('수량: ${tool.quantity}')),
+                                Spacer(),
+                                Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                        '불출량: ${tool.quantity - tool.remainingQuantity}')),
+                                Spacer(),
+                                Expanded(
+                                    flex: 2,
+                                    child:
+                                        Text('잔여량: ${tool.remainingQuantity}')),
+                                Spacer(),
+                                IconButton(
+                                  icon: Icon(Icons.edit),
+                                  onPressed: () => _editTool(tool),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () =>
-                              _confirmDeleteTool(tool.id!, tool.name),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  UseDetailScreen(toolId: tool.id!),
+                            trailing: IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () =>
+                                  _confirmDeleteTool(tool.id!, tool.name),
                             ),
-                          ).then((_) async {
-                            await _loadToolsList();
-                            await _loadSiteNames();
-                          });
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      UseDetailScreen(toolId: tool.id!),
+                                ),
+                              ).then((_) async {
+                                await _loadToolsList();
+                                await _loadSiteNames();
+                              });
+                            },
+                          );
                         },
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: TextField(
-                          controller: nameController,
-                          decoration: InputDecoration(labelText: '공도구명'),
-                          onSubmitted: (value) => _addTool(),
-                        ),
                       ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: quantityController,
-                          decoration: InputDecoration(labelText: '수량'),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly
-                          ],
-                          onSubmitted: (value) => _addTool(),
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: _addTool,
-                        child: Text('추가'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          VerticalDivider(
-            width: 1,
-            thickness: 1,
-            color: Colors.grey,
-          ),
-          Expanded(
-            flex: 1,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    '현장명 목록',
-                    style:
-                        TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: siteNames.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text(siteNames[index]),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  SiteDetailScreen(siteName: siteNames[index]),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: TextField(
+                              controller: nameController,
+                              decoration: InputDecoration(labelText: '공도구명'),
+                              onSubmitted: (value) => _addTool(),
                             ),
-                          ).then((_) async {
-                            await _loadToolsList();
-                            await _loadSiteNames();
-                          });
-                        },
-                      );
-                    },
-                  ),
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: quantityController,
+                              decoration: InputDecoration(labelText: '수량'),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              onSubmitted: (value) => _addTool(),
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: _addTool,
+                            child: Text('추가'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+              GestureDetector(
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    _leftPanelWidth += details.delta.dx / constraints.maxWidth;
+                    if (_leftPanelWidth < 0.3) _leftPanelWidth = 0.3;
+                    if (_leftPanelWidth > 0.6) _leftPanelWidth = 0.6;
+                  });
+                },
+                child: VerticalDivider(
+                  width: 5,
+                  thickness: 1,
+                  color: Colors.black,
+                ),
+              ),
+              Container(
+                width: constraints.maxWidth * _rightPanelWidth,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        '현장명 목록',
+                        style: TextStyle(
+                            fontSize: 16.0, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: siteNames.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            title: Text(siteNames[index]),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SiteDetailScreen(
+                                      siteName: siteNames[index]),
+                                ),
+                              ).then((_) async {
+                                await _loadToolsList();
+                                await _loadSiteNames();
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    _rightPanelWidth -= details.delta.dx / constraints.maxWidth;
+                    if (_rightPanelWidth < 0.2) _rightPanelWidth = 0.2;
+                    if (_rightPanelWidth > 0.4) _rightPanelWidth = 0.4;
+                  });
+                },
+                child: VerticalDivider(
+                  width: 5,
+                  thickness: 1,
+                  color: Colors.black,
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        '메모장',
+                        style: TextStyle(
+                            fontSize: 16.0, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextField(
+                          controller: noteController,
+                          maxLines: null,
+                          expands: true,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: '메모를 입력하세요...',
+                          ),
+                          onChanged: (value) => _saveNote(),
+                        ),
+                      ),
+                    ),
+                    // ElevatedButton(
+                    //   onPressed: () async {
+                    //     noteController.clear();
+                    //     await _saveNote();
+                    //   },
+                    //   child: Text('메모 초기화'),
+                    // ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
