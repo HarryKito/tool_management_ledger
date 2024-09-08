@@ -331,7 +331,7 @@ class _UseDetailScreenState extends State<UseDetailScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              '현장 담당자: ${use.siteMan} / 반출자: ${use.borrower}',
+                              '현장 담당자: ${use.siteMan} / 반출자: ${use.borrower} / ${use.amount}개',
                             ),
                           ),
                           Align(
